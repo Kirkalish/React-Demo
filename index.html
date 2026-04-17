@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Galaktik Mission Control Dashboard, a React demo focused on reusable UI architecture, responsive design, and a polished sci-fi product experience."
+    />
+    <title>Galaktik Mission Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        min-width: 320px;
+        font-family: "Space Grotesk", sans-serif;
+        color: #f3f6ff;
+        background:
+          radial-gradient(circle at top left, rgba(36, 198, 255, 0.18), transparent 28%),
+          radial-gradient(circle at top right, rgba(194, 92, 255, 0.16), transparent 30%),
+          linear-gradient(180deg, #070b16 0%, #0b1021 100%);
+      }
+
+      .boot-shell {
+        padding: 32px;
+      }
+
+      .boot-card {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 30px;
+        border: 1px solid rgba(139, 166, 255, 0.18);
+        border-radius: 28px;
+        background: rgba(11, 16, 33, 0.72);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(16px);
+      }
+
+      .boot-card p {
+        margin: 0 0 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 0.76rem;
+        font-weight: 700;
+        color: rgba(204, 223, 255, 0.72);
+      }
+
+      .boot-card h1 {
+        margin: 0;
+        font-family: "Sora", sans-serif;
+        font-size: clamp(2.6rem, 8vw, 5rem);
+        line-height: 1;
+        font-weight: 700;
+      }
+
+      .boot-card span {
+        display: block;
+        color: #65d8ff;
+      }
+
+      .boot-card small {
+        display: block;
+        margin-top: 18px;
+        color: rgba(204, 223, 255, 0.72);
+        font-size: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <section class="boot-shell">
+        <div class="boot-card">
+          <p>Galaktik React Demo</p>
+          <h1>
+            Mission Control
+            <span>syncing sector telemetry...</span>
+          </h1>
+          <small>Loading the routed dashboard, mission registry, and explorer roster.</small>
+        </div>
+      </section>
+    </div>
+    <noscript>This site needs JavaScript enabled to load the full Galaktik dashboard demo.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
