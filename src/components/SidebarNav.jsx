@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import { useAlertMode } from "../context/AlertModeContext";
 
 const links = [
   { to: "/", label: "Mission Control", shortLabel: "MC" },
@@ -8,6 +9,8 @@ const links = [
 ];
 
 export default function SidebarNav() {
+  const { redAlert, data } = useAlertMode();
+
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
@@ -36,8 +39,12 @@ export default function SidebarNav() {
 
       <div className="sidebar__footer">
         <p>Fleet readiness</p>
-        <strong>92%</strong>
-        <small>Operational confidence across active sectors</small>
+        <strong>{data.readiness}</strong>
+        <small>
+          {redAlert
+            ? "Emergency confidence after cascading sector failures"
+            : "Operational confidence across active sectors"}
+        </small>
       </div>
     </aside>
   );

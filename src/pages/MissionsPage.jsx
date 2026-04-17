@@ -2,9 +2,12 @@ import React from "react";
 import { useDeferredValue, useState } from "react";
 import EmptyState from "../components/EmptyState";
 import MissionTable from "../components/MissionTable";
-import { missions } from "../data/galaktikData";
+import { useAlertMode } from "../context/AlertModeContext";
 
 export default function MissionsPage() {
+  const {
+    data: { missions },
+  } = useAlertMode();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All");
   const [priority, setPriority] = useState("All");

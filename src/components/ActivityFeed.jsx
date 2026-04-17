@@ -1,13 +1,25 @@
 import React from "react";
 import StatusBadge from "./StatusBadge";
 
-export default function ActivityFeed({ items, title, compact = false }) {
+export default function ActivityFeed({
+  items,
+  title,
+  eyebrow = "Live feed",
+  description = "",
+  compact = false,
+  tone = "default",
+}) {
   return (
-    <section className={`panel activity-feed ${compact ? "activity-feed--compact" : ""}`}>
+    <section
+      className={`panel activity-feed ${
+        compact ? "activity-feed--compact" : ""
+      } ${tone === "alert" ? "activity-feed--alert" : ""}`}
+    >
       <div className="panel__header">
         <div>
-          <p className="eyebrow">Live feed</p>
+          <p className="eyebrow">{eyebrow}</p>
           <h2>{title}</h2>
+          {description ? <p className="activity-feed__description">{description}</p> : null}
         </div>
       </div>
 

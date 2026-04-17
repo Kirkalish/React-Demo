@@ -1,11 +1,22 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Outlet } from "react-router-dom";
+import { AlertModeProvider, useAlertMode } from "../context/AlertModeContext";
 import SidebarNav from "./SidebarNav";
 import TopHeader from "./TopHeader";
 
-export default function AppShell() {
+function ShellLayout() {
+  const { redAlert } = useAlertMode();
+
+  useEffect(() => {
+    document.body.classList.toggle("body--alert", redAlert);
+
+    return () => {
+      document.body.classList.remove("body--alert");
+    };
+  }, [redAlert]);
+
   return (
-    <div className="app-shell">
+    <div className={redAlert ? "app-shell app-shell--alert" : "app-shell"}>
       <div className="app-shell__glow app-shell__glow--left" />
       <div className="app-shell__glow app-shell__glow--right" />
 
@@ -18,5 +29,13 @@ export default function AppShell() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function AppShell() {
+  return (
+    <AlertModeProvider>
+      <ShellLayout />
+    </AlertModeProvider>
   );
 }

@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
+import { useAlertMode } from "../context/AlertModeContext";
 
 const pageMeta = {
   "/": {
@@ -18,6 +19,7 @@ const pageMeta = {
 
 export default function TopHeader() {
   const location = useLocation();
+  const { redAlert, setRedAlert, data } = useAlertMode();
   const detailMatch = location.pathname.startsWith("/missions/");
   const meta = detailMatch
     ? {
@@ -35,11 +37,20 @@ export default function TopHeader() {
       </div>
 
       <div className="top-header__status">
-        <div className="status-chip">
+        <button
+          type="button"
+          className={redAlert ? "alert-toggle alert-toggle--active" : "alert-toggle"}
+          aria-pressed={redAlert}
+          onClick={() => setRedAlert((current) => !current)}
+        >
+          <span className="alert-toggle__dot" />
+          {redAlert ? "Disable red alert" : "Enable red alert"}
+        </button>
+        <div className={redAlert ? "status-chip status-chip--alert" : "status-chip"}>
           <span className="status-chip__dot" />
-          Systems nominal
+          {data.networkLabel}
         </div>
-        <div className="status-chip status-chip--muted">Cycle 214.77</div>
+        <div className="status-chip status-chip--muted">{data.cycleLabel}</div>
       </div>
     </header>
   );

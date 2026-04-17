@@ -1,8 +1,12 @@
 import React from "react";
 import CrewCard from "../components/CrewCard";
-import { crew } from "../data/galaktikData";
+import { useAlertMode } from "../context/AlertModeContext";
 
 export default function CrewPage() {
+  const {
+    data: { crew },
+  } = useAlertMode();
+
   return (
     <div className="stack-layout">
       <section className="panel">

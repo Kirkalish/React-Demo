@@ -1,4 +1,4 @@
-export const resources = [
+const nominalResources = [
   {
     id: "helium",
     label: "Helium reserves",
@@ -25,7 +25,34 @@ export const resources = [
   },
 ];
 
-export const crew = [
+const alertResources = [
+  {
+    id: "helium",
+    label: "Helium reserves",
+    current: 39,
+    capacity: 100,
+    tone: "magenta",
+    detail: "-22% after emergency reroute",
+  },
+  {
+    id: "quantum",
+    label: "Quantum cores",
+    current: 12,
+    capacity: 40,
+    tone: "magenta",
+    detail: "8 cores consumed by shield failures",
+  },
+  {
+    id: "med",
+    label: "Medical kits",
+    current: 17,
+    capacity: 60,
+    tone: "gold",
+    detail: "Field triage requests rising",
+  },
+];
+
+const nominalCrew = [
   {
     id: "nyra-vale",
     name: "Nyra Vale",
@@ -88,7 +115,70 @@ export const crew = [
   },
 ];
 
-export const missions = [
+const alertCrew = [
+  {
+    id: "nyra-vale",
+    name: "Nyra Vale",
+    role: "Mission Commander",
+    level: 9,
+    status: "Critical",
+    specialty: "Long-range ops",
+    missionId: "orion-relay",
+    efficiency: "63%",
+  },
+  {
+    id: "cass-orin",
+    name: "Cass Orin",
+    role: "Systems Navigator",
+    level: 7,
+    status: "Offline",
+    specialty: "Signal routing",
+    missionId: "orion-relay",
+    efficiency: "41%",
+  },
+  {
+    id: "tala-rho",
+    name: "Tala Rho",
+    role: "Resource Architect",
+    level: 8,
+    status: "Evacuating",
+    specialty: "Supply optimization",
+    missionId: "ember-vault",
+    efficiency: "58%",
+  },
+  {
+    id: "juno-kest",
+    name: "Juno Kest",
+    role: "Security Lead",
+    level: 6,
+    status: "Deployed",
+    specialty: "Threat response",
+    missionId: "atlas-gate",
+    efficiency: "72%",
+  },
+  {
+    id: "sol-miren",
+    name: "Sol Miren",
+    role: "Field Biologist",
+    level: 5,
+    status: "Critical",
+    specialty: "Xeno analysis",
+    missionId: "verdant-ring",
+    efficiency: "39%",
+  },
+  {
+    id: "lyx-soren",
+    name: "Lyx Soren",
+    role: "Commerce Liaison",
+    level: 7,
+    status: "Rerouted",
+    specialty: "Trade corridors",
+    missionId: "ember-vault",
+    efficiency: "51%",
+  },
+];
+
+const nominalMissions = [
   {
     id: "orion-relay",
     name: "Orion Relay Sweep",
@@ -207,7 +297,126 @@ export const missions = [
   },
 ];
 
-export const alerts = [
+const alertMissions = [
+  {
+    id: "orion-relay",
+    name: "Orion Relay Collapse",
+    status: "Alert",
+    priority: "Critical",
+    category: "Signal Recovery",
+    region: "Orion Fringe",
+    summary:
+      "Relay integrity has dropped below safe thresholds and civilian routing is now unstable across the fringe.",
+    reward: "42k credits",
+    startedAt: "04:10 UTC",
+    difficulty: "S-5",
+    assignedCrew: ["nyra-vale", "cass-orin"],
+    objectives: [
+      "Stabilize relay array 7A",
+      "Contain cascading beacon failures",
+      "Restore one safe outbound lane",
+    ],
+    resourceCost: {
+      fuel: "31 units",
+      cores: "5 quantum cores",
+      med: "9 kits",
+    },
+    timeline: [
+      { label: "Civilian routing failure confirmed", state: "Critical", time: "04:18 UTC" },
+      { label: "Navigator uplink lost", state: "Offline", time: "04:42 UTC" },
+      { label: "Emergency patch routed through backup net", state: "In progress", time: "05:03 UTC" },
+    ],
+  },
+  {
+    id: "ember-vault",
+    name: "Ember Vault Breach",
+    status: "Alert",
+    priority: "Critical",
+    category: "Trade Protocol",
+    region: "Mercury Drift",
+    summary:
+      "The exchange corridor is compromised and partner cargo lanes are under forced lockdown.",
+    reward: "28k credits",
+    startedAt: "07:25 UTC",
+    difficulty: "S-4",
+    assignedCrew: ["tala-rho", "lyx-soren"],
+    objectives: [
+      "Lock compromised cargo manifests",
+      "Evacuate partner exchange crew",
+      "Reroute all live trade lanes",
+    ],
+    resourceCost: {
+      fuel: "19 units",
+      cores: "3 quantum cores",
+      med: "5 kits",
+    },
+    timeline: [
+      { label: "Unauthorized vault access logged", state: "Critical", time: "07:25 UTC" },
+      { label: "Commerce team rerouted", state: "Rerouted", time: "07:41 UTC" },
+      { label: "Exchange corridor remains sealed", state: "Warning", time: "09:10 UTC" },
+    ],
+  },
+  {
+    id: "atlas-gate",
+    name: "Atlas Gate Failure",
+    status: "Alert",
+    priority: "Critical",
+    category: "Defense",
+    region: "Atlas Rim",
+    summary:
+      "Shield logic is degrading under live pressure and outbound fleets remain suspended at the gate.",
+    reward: "57k credits",
+    startedAt: "02:58 UTC",
+    difficulty: "S-5",
+    assignedCrew: ["juno-kest"],
+    objectives: [
+      "Hold perimeter under active threat",
+      "Deploy emergency shield patch",
+      "Prevent gate-wide cascade failure",
+    ],
+    resourceCost: {
+      fuel: "35 units",
+      cores: "7 quantum cores",
+      med: "11 kits",
+    },
+    timeline: [
+      { label: "Perimeter breach escalated", state: "Critical", time: "03:02 UTC" },
+      { label: "Outbound fleets hard-stopped", state: "Warning", time: "03:26 UTC" },
+      { label: "Defense firmware rollback failed", state: "Critical", time: "04:48 UTC" },
+    ],
+  },
+  {
+    id: "verdant-ring",
+    name: "Verdant Ring Extraction",
+    status: "Alert",
+    priority: "High",
+    category: "Exploration",
+    region: "Verdant Ring",
+    summary:
+      "The survey team is now in extraction mode after toxic atmospheric activity breached safe margins.",
+    reward: "16k credits",
+    startedAt: "11:40 UTC",
+    difficulty: "S-3",
+    assignedCrew: ["sol-miren"],
+    objectives: [
+      "Recover downed survey drones",
+      "Extract the field biologist",
+      "Seal the contaminated landing corridor",
+    ],
+    resourceCost: {
+      fuel: "14 units",
+      cores: "1 quantum core",
+      med: "8 kits",
+    },
+    timeline: [
+      { label: "Toxic bloom expanded beyond safe range", state: "Critical", time: "11:46 UTC" },
+      { label: "Field bio team requested extraction", state: "Warning", time: "12:09 UTC" },
+      { label: "Containment corridor en route", state: "In progress", time: "12:12 UTC" },
+    ],
+  },
+];
+
+const nominalAlerts = [
   {
     id: "alert-1",
     type: "Security",
@@ -238,7 +447,38 @@ export const alerts = [
   },
 ];
 
-export const transmissions = [
+const alertAlerts = [
+  {
+    id: "alert-1",
+    type: "Security",
+    severity: "Critical",
+    title: "Atlas Gate shield ring collapsed across two perimeter sectors",
+    timestamp: "just now",
+  },
+  {
+    id: "alert-2",
+    type: "Mission",
+    severity: "Critical",
+    title: "Orion relay cascade has cut civilian routing capacity to 41%",
+    timestamp: "1 min ago",
+  },
+  {
+    id: "alert-3",
+    type: "Trade",
+    severity: "High",
+    title: "Mercury Drift corridor locked after unauthorized vault breach",
+    timestamp: "4 min ago",
+  },
+  {
+    id: "alert-4",
+    type: "Medical",
+    severity: "High",
+    title: "Verdant Ring extraction request escalated to emergency channel",
+    timestamp: "7 min ago",
+  },
+];
+
+const nominalTransmissions = [
   {
     id: "tx-1",
     source: "Outer Relay 7A",
@@ -259,14 +499,78 @@ export const transmissions = [
   },
 ];
 
-export function getMissionById(missionId) {
+const alertTransmissions = [
+  {
+    id: "tx-1",
+    source: "Outer Relay 7A",
+    title: "Fallback packet net failing. Civilian lane collapse imminent.",
+    status: "Critical",
+  },
+  {
+    id: "tx-2",
+    source: "Mercury Drift Guild",
+    title: "Cargo partners abandoning corridor after vault compromise.",
+    status: "Rerouted",
+  },
+  {
+    id: "tx-3",
+    source: "Atlas Perimeter Net",
+    title: "Primary shield firmware rollback rejected by live defense ring.",
+    status: "Escalated",
+  },
+];
+
+const nominalMetrics = [
+  { label: "Active missions", value: "04", trend: "+1 since previous cycle", tone: "cyan" },
+  { label: "Explorers assigned", value: "06", trend: "2 teams deployed off-station", tone: "violet" },
+  { label: "High-severity alerts", value: "03", trend: "Security focus at Atlas Rim", tone: "magenta" },
+  { label: "Trade corridor uptime", value: "99.2%", trend: "Stable commerce routing", tone: "gold" },
+];
+
+const alertMetrics = [
+  { label: "Critical missions", value: "04", trend: "All sectors above safe threshold", tone: "magenta" },
+  { label: "Crew stability", value: "41%", trend: "Multiple teams degraded or offline", tone: "magenta" },
+  { label: "High-severity alerts", value: "11", trend: "Escalation across every channel", tone: "magenta" },
+  { label: "Trade corridor uptime", value: "27.4%", trend: "Civilian commerce severely impaired", tone: "gold" },
+];
+
+const scenarioData = {
+  nominal: {
+    resources: nominalResources,
+    crew: nominalCrew,
+    missions: nominalMissions,
+    alerts: nominalAlerts,
+    transmissions: nominalTransmissions,
+    metrics: nominalMetrics,
+    networkLabel: "Systems nominal",
+    cycleLabel: "Cycle 214.77",
+    readiness: "92%",
+  },
+  alert: {
+    resources: alertResources,
+    crew: alertCrew,
+    missions: alertMissions,
+    alerts: alertAlerts,
+    transmissions: alertTransmissions,
+    metrics: alertMetrics,
+    networkLabel: "Red alert engaged",
+    cycleLabel: "Cycle 214.77A",
+    readiness: "41%",
+  },
+};
+
+export function getScenarioData(redAlert = false) {
+  return redAlert ? scenarioData.alert : scenarioData.nominal;
+}
+
+export function getMissionById(missions, missionId) {
   return missions.find((mission) => mission.id === missionId) ?? null;
 }
 
-export function getCrewByMission(missionId) {
+export function getCrewByMission(crew, missionId) {
   return crew.filter((member) => member.missionId === missionId);
 }
 
-export function getMissionName(missionId) {
-  return getMissionById(missionId)?.name ?? "Unassigned";
+export function getMissionName(missions, missionId) {
+  return getMissionById(missions, missionId)?.name ?? "Unassigned";
 }

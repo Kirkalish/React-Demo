@@ -4,13 +4,17 @@ import { Link, useParams } from "react-router-dom";
 import CrewCard from "../components/CrewCard";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
+import { useAlertMode } from "../context/AlertModeContext";
 import { getCrewByMission, getMissionById } from "../data/galaktikData";
 
 export default function MissionDetailPage() {
   const { missionId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
-  const mission = missionId ? getMissionById(missionId) : null;
-  const assignedCrew = missionId ? getCrewByMission(missionId) : [];
+  const {
+    data: { crew, missions },
+  } = useAlertMode();
+  const mission = missionId ? getMissionById(missions, missionId) : null;
+  const assignedCrew = missionId ? getCrewByMission(crew, missionId) : [];
 
   useEffect(() => {
     setIsLoading(true);

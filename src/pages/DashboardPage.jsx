@@ -5,35 +5,35 @@ import CrewCard from "../components/CrewCard";
 import ResourceMeter from "../components/ResourceMeter";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
-import { alerts, crew, missions, resources, transmissions } from "../data/galaktikData";
-
-const stats = [
-  { label: "Active missions", value: "04", trend: "+1 since previous cycle", tone: "cyan" },
-  { label: "Explorers assigned", value: "06", trend: "2 teams deployed off-station", tone: "violet" },
-  { label: "High-severity alerts", value: "03", trend: "Security focus at Atlas Rim", tone: "magenta" },
-  { label: "Trade corridor uptime", value: "99.2%", trend: "Stable commerce routing", tone: "gold" },
-];
+import { useAlertMode } from "../context/AlertModeContext";
 
 export default function DashboardPage() {
+  const { redAlert, data } = useAlertMode();
+  const { alerts, crew, metrics, missions, resources, transmissions } = data;
+
   return (
     <div className="dashboard-grid">
       <section className="dashboard-grid__hero panel panel--hero">
         <div className="panel__header">
           <div>
             <p className="eyebrow">Sector overview</p>
-            <h2>Galaktik network readiness remains within green thresholds.</h2>
+            <h2>
+              {redAlert
+                ? "Galaktik network readiness has fallen into multi-sector critical failure."
+                : "Galaktik network readiness remains within green thresholds."}
+            </h2>
           </div>
-          <StatusBadge label="Active" />
+          <StatusBadge label={redAlert ? "Critical" : "Active"} />
         </div>
 
         <p className="panel__lede">
-          A portfolio-ready sci-fi operations dashboard built to feel like a real product:
-          card systems, mission flows, responsive panels, and data-rich UI without backend
-          complexity.
+          {redAlert
+            ? "Red alert mode simulates a degraded operating state with lower reserves, critical missions, unstable crew performance, and higher-severity system traffic."
+            : "A portfolio-ready sci-fi operations dashboard built to feel like a real product: card systems, mission flows, responsive panels, and data-rich UI without backend complexity."}
         </p>
 
         <div className="hero-grid__stats">
-          {stats.map((stat) => (
+          {metrics.map((stat) => (
             <StatCard key={stat.label} {...stat} />
           ))}
         </div>
@@ -83,7 +83,17 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <ActivityFeed items={alerts} title="Alerts and signal traffic" />
+      <ActivityFeed
+        items={alerts}
+        eyebrow={redAlert ? "Red alert feed" : "Live feed"}
+        title={redAlert ? "Critical incidents and sector failures" : "Alerts and signal traffic"}
+        description={
+          redAlert
+            ? "This channel is now prioritizing distress events, infrastructure failures, and emergency escalation."
+            : "Live operational events across security, mission, trade, and medical channels."
+        }
+        tone={redAlert ? "alert" : "default"}
+      />
 
       <section className="panel">
         <div className="panel__header">
@@ -103,7 +113,18 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <ActivityFeed items={transmissions} title="Recent transmissions" compact />
+      <ActivityFeed
+        items={transmissions}
+        eyebrow={redAlert ? "Emergency comms" : "Live feed"}
+        title={redAlert ? "Distress transmissions" : "Recent transmissions"}
+        description={
+          redAlert
+            ? "Inbound comms have shifted from routine updates to failure reports and reroute notices."
+            : "Recent outbound and inbound communications across the Galaktik network."
+        }
+        compact
+        tone={redAlert ? "alert" : "default"}
+      />
     </div>
   );
 }
