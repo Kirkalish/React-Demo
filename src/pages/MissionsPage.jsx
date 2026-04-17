@@ -26,7 +26,7 @@ export default function MissionsPage() {
   });
 
   return (
-    <div className="stack-layout">
+    <div className="stack-layout stack-layout--missions">
       <section className="panel filter-panel">
         <div className="panel__header">
           <div>
@@ -69,7 +69,7 @@ export default function MissionsPage() {
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel panel--fill">
         <div className="panel__header">
           <div>
             <p className="eyebrow">Mission list</p>

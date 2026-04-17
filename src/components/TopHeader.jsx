@@ -21,6 +21,7 @@ export default function TopHeader() {
   const location = useLocation();
   const { redAlert, setRedAlert, data } = useAlertMode();
   const detailMatch = location.pathname.startsWith("/missions/");
+  const compactHeader = location.pathname !== "/";
   const meta = detailMatch
     ? {
         title: "Mission Detail",
@@ -29,7 +30,7 @@ export default function TopHeader() {
     : pageMeta[location.pathname] ?? pageMeta["/"];
 
   return (
-    <header className="top-header">
+    <header className={compactHeader ? "top-header top-header--compact" : "top-header"}>
       <div>
         <p className="eyebrow">Galaktik React Demo</p>
         <h1>{meta.title}</h1>

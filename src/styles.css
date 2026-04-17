@@ -175,11 +175,24 @@ select {
     linear-gradient(135deg, rgba(98, 220, 255, 0.25), rgba(185, 135, 255, 0.18)),
     rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(98, 220, 255, 0.24);
-  font-family: "Sora", sans-serif;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: var(--cyan);
   box-shadow: inset 0 0 30px rgba(98, 220, 255, 0.12);
+}
+
+.sidebar__icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sidebar__icon--brand {
+  width: 36px;
+  height: 36px;
+  color: var(--cyan);
+  stroke-width: 1.5;
 }
 
 .sidebar__brand strong,
@@ -235,8 +248,7 @@ select {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   color: var(--text-soft);
-  font-size: 0.84rem;
-  font-weight: 700;
+  overflow: hidden;
 }
 
 .sidebar__link b {
@@ -298,7 +310,10 @@ select {
 
 .app-shell__content {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
   gap: 22px;
+  min-height: 0;
 }
 
 .top-header {
@@ -312,6 +327,11 @@ select {
   background: rgba(8, 12, 24, 0.72);
   backdrop-filter: blur(18px);
   box-shadow: var(--shadow);
+}
+
+.top-header--compact {
+  align-items: flex-start;
+  padding: 16px 24px;
 }
 
 .app-shell--alert .top-header {
@@ -343,9 +363,17 @@ select {
   line-height: 1;
 }
 
+.top-header--compact h1 {
+  font-size: clamp(2rem, 4vw, 2.95rem);
+}
+
 .top-header__description {
   max-width: 720px;
   margin: 12px 0 0;
+}
+
+.top-header--compact .top-header__description {
+  margin-top: 8px;
 }
 
 .top-header__status {
@@ -432,6 +460,8 @@ select {
 .app-main {
   display: grid;
   gap: 20px;
+  align-content: start;
+  min-height: 0;
 }
 
 .panel {
@@ -457,6 +487,11 @@ select {
     radial-gradient(circle at top right, rgba(98, 220, 255, 0.14), transparent 30%),
     radial-gradient(circle at bottom left, rgba(255, 106, 223, 0.12), transparent 24%),
     linear-gradient(180deg, rgba(18, 25, 48, 0.88), rgba(10, 14, 28, 0.84));
+}
+
+.dashboard-grid__hero {
+  display: flex;
+  flex-direction: column;
 }
 
 .app-shell--alert .panel--hero {
@@ -498,6 +533,14 @@ select {
   gap: 20px;
 }
 
+.stack-layout--missions {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.panel--fill {
+  height: 100%;
+}
+
 .dashboard-grid {
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.8fr);
 }
@@ -517,7 +560,8 @@ select {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 22px;
+  width: min(100%, 820px);
+  margin: auto;
 }
 
 .stat-card {
@@ -902,6 +946,12 @@ select {
   background: rgba(255, 255, 255, 0.035);
   color: var(--text);
   outline: none;
+}
+
+.filter-panel__controls select,
+.filter-panel__controls option {
+  background: #171d31;
+  color: var(--text);
 }
 
 .filter-panel__controls input:focus,
