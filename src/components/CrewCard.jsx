@@ -16,7 +16,11 @@ export default function CrewCard({ member }) {
         <StatusBadge label={member.status} />
       </div>
 
-      <h3>{member.name}</h3>
+      <h3>
+        <Link className="crew-card__name-link" to={`/crew/${member.id}`}>
+          {member.name}
+        </Link>
+      </h3>
       <p className="crew-card__role">
         {member.role}
         <span>Level {member.level}</span>

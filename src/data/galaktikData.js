@@ -52,6 +52,57 @@ const alertResources = [
   },
 ];
 
+const crewProfiles = {
+  "nyra-vale": {
+    callsign: "Aster Nine",
+    homeSector: "Orion Fringe",
+    clearance: "Command Tier 4",
+    commsChannel: "OR-7A",
+    bio: "Veteran mission commander trusted with relay stabilization and cross-sector fleet coordination.",
+    certifications: ["Long-range navigation", "Crisis command", "Fleet routing"],
+  },
+  "cass-orin": {
+    callsign: "Vector Slate",
+    homeSector: "Outer Relay 7A",
+    clearance: "Systems Tier 3",
+    commsChannel: "NET-42",
+    bio: "Signal-routing specialist focused on degraded-network recovery, packet stability, and backup relay logic.",
+    certifications: ["Beacon calibration", "Signal routing", "Systems diagnostics"],
+  },
+  "tala-rho": {
+    callsign: "Ledger Drift",
+    homeSector: "Mercury Drift",
+    clearance: "Commerce Tier 3",
+    commsChannel: "EX-18",
+    bio: "Resource architect balancing mission inventory, corridor readiness, and trade deployment budgets.",
+    certifications: ["Supply planning", "Cargo security", "Resource modeling"],
+  },
+  "juno-kest": {
+    callsign: "Bastion Six",
+    homeSector: "Atlas Rim",
+    clearance: "Defense Tier 4",
+    commsChannel: "AT-SEC",
+    bio: "Security lead assigned to perimeter hardening, threat interception, and shield corridor response.",
+    certifications: ["Threat response", "Perimeter defense", "Shield enforcement"],
+  },
+  "sol-miren": {
+    callsign: "Verdant Echo",
+    homeSector: "Verdant Ring",
+    clearance: "Survey Tier 2",
+    commsChannel: "VR-BIO",
+    bio: "Field biologist handling xeno-signal surveys, habitat viability analysis, and live sample recovery.",
+    certifications: ["Xeno analysis", "Hazard fieldwork", "Atmospheric sampling"],
+  },
+  "lyx-soren": {
+    callsign: "Mercury Line",
+    homeSector: "Mercury Drift",
+    clearance: "Trade Tier 3",
+    commsChannel: "DR-22",
+    bio: "Commerce liaison coordinating partner exchange windows, corridor access, and pricing uplinks.",
+    certifications: ["Trade corridors", "Partner ops", "Exchange routing"],
+  },
+};
+
 const nominalCrew = [
   {
     id: "nyra-vale",
@@ -571,6 +622,23 @@ export function getCrewByMission(crew, missionId) {
   return crew.filter((member) => member.missionId === missionId);
 }
 
+export function getCrewMemberById(crew, memberId) {
+  return crew.find((member) => member.id === memberId) ?? null;
+}
+
 export function getMissionName(missions, missionId) {
   return getMissionById(missions, missionId)?.name ?? "Unassigned";
+}
+
+export function getCrewProfile(memberId) {
+  return (
+    crewProfiles[memberId] ?? {
+      callsign: "Unlisted",
+      homeSector: "Unknown",
+      clearance: "Unassigned",
+      commsChannel: "None",
+      bio: "No extended crew profile is available in the current dataset.",
+      certifications: [],
+    }
+  );
 }

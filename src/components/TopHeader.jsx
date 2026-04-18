@@ -21,13 +21,19 @@ export default function TopHeader() {
   const location = useLocation();
   const { redAlert, setRedAlert, data } = useAlertMode();
   const detailMatch = location.pathname.startsWith("/missions/");
+  const crewDetailMatch = location.pathname.startsWith("/crew/");
   const compactHeader = location.pathname !== "/";
   const meta = detailMatch
     ? {
         title: "Mission Detail",
         description: "Objectives, crew, costs, and timeline for the selected operation.",
       }
-    : pageMeta[location.pathname] ?? pageMeta["/"];
+    : crewDetailMatch
+      ? {
+          title: "Crew Dossier",
+          description: "Explorer profile, assignment context, certifications, and live field status.",
+        }
+      : pageMeta[location.pathname] ?? pageMeta["/"];
 
   return (
     <header className={compactHeader ? "top-header top-header--compact" : "top-header"}>
