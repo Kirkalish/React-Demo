@@ -1,8 +1,19 @@
 import React from "react";
 import { useDeferredValue, useState } from "react";
 import EmptyState from "../components/EmptyState";
+import MissionManagerModal from "../components/MissionManagerModal";
 import MissionTable from "../components/MissionTable";
 import { useAlertMode } from "../context/AlertModeContext";
+
+function MissionControlsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="crew-controls__icon">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+      <circle cx="12" cy="12" r="7.5" />
+    </svg>
+  );
+}
 
 export default function MissionsPage() {
   const {
@@ -11,6 +22,7 @@ export default function MissionsPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All");
   const [priority, setPriority] = useState("All");
+  const [createOpen, setCreateOpen] = useState(false);
   const deferredQuery = useDeferredValue(query);
 
   const filteredMissions = missions.filter((mission) => {
@@ -26,6 +38,7 @@ export default function MissionsPage() {
   });
 
   return (
+    <>
     <div className="stack-layout stack-layout--missions">
       <section className="panel filter-panel">
         <div className="panel__header">
@@ -33,6 +46,14 @@ export default function MissionsPage() {
             <p className="eyebrow">Registry controls</p>
             <h2>Mission search and filtering</h2>
           </div>
+          <button
+            type="button"
+            className="crew-controls__button"
+            aria-label="Create mission"
+            onClick={() => setCreateOpen(true)}
+          >
+            <MissionControlsIcon />
+          </button>
         </div>
 
         <div className="filter-panel__controls">
@@ -87,5 +108,7 @@ export default function MissionsPage() {
         )}
       </section>
     </div>
+    <MissionManagerModal open={createOpen} onClose={() => setCreateOpen(false)} />
+    </>
   );
 }

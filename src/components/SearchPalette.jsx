@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { useAlertMode } from "../context/AlertModeContext";
 
 function SearchPaletteIcon() {
   return (
@@ -69,8 +71,16 @@ export default function SearchPalette({
   onExecuteSimulation,
 }) {
   const inputRef = useRef(null);
+  const backdropRef = useRef(null);
+  const panelRef = useRef(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [shouldRender, setShouldRender] = useState(open);
+  const {
+    preferences: {
+      accessibility: { reduceMotion },
+    },
+  } = useAlertMode();
 
   const allCommands = useMemo(
     () => [
@@ -248,6 +258,12 @@ export default function SearchPalette({
   );
 
   useEffect(() => {
+    if (open) {
+      setShouldRender(true);
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (!open) {
       setQuery("");
       setActiveIndex(0);
@@ -265,6 +281,139 @@ export default function SearchPalette({
     setActiveIndex(0);
   }, [query, open]);
 
+  useLayoutEffect(() => {
+    if (!shouldRender || !panelRef.current || !backdropRef.current) {
+      return;
+    }
+
+    if (reduceMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set([backdropRef.current, panelRef.current], { clearProps: "transform,opacity,visibility" });
+      if (!open) {
+        setShouldRender(false);
+      }
+      return;
+    }
+
+    let timeline;
+    const panel = panelRef.current;
+    const backdrop = backdropRef.current;
+    const header = panel.querySelector(".search-palette__header");
+    const field = panel.querySelector(".search-palette__field");
+    const sections = panel.querySelectorAll(".search-palette__section, .search-palette__empty");
+
+    if (open) {
+      gsap.set(backdrop, { autoAlpha: 0 });
+      gsap.set(panel, { autoAlpha: 0, y: 18, scale: 0.985, transformOrigin: "center center" });
+      if (header) {
+        gsap.set(header, { autoAlpha: 0, y: 10 });
+      }
+      if (field) {
+        gsap.set(field, { autoAlpha: 0, y: 12 });
+      }
+      if (sections.length) {
+        gsap.set(sections, { autoAlpha: 0, y: 14 });
+      }
+
+      timeline = gsap.timeline({
+        defaults: {
+          ease: "power3.out",
+        },
+      });
+
+      timeline.to(backdrop, { autoAlpha: 1, duration: 0.18 }, 0);
+      timeline.to(
+        panel,
+        {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.24,
+        },
+        0,
+      );
+
+      if (header) {
+        timeline.to(
+          header,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.18,
+          },
+          "-=0.12",
+        );
+      }
+
+      if (field) {
+        timeline.to(
+          field,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.2,
+          },
+          "-=0.1",
+        );
+      }
+
+      if (sections.length) {
+        timeline.to(
+          sections,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.22,
+            stagger: 0.04,
+            clearProps: "transform,opacity,visibility",
+          },
+          "-=0.06",
+        );
+      }
+    } else {
+      timeline = gsap.timeline({
+        defaults: {
+          ease: "power2.inOut",
+        },
+        onComplete: () => {
+          setShouldRender(false);
+        },
+      });
+
+      timeline.to(sections, { autoAlpha: 0, y: 8, duration: 0.12, stagger: 0.02 }, 0);
+      if (field) {
+        timeline.to(field, { autoAlpha: 0, y: 8, duration: 0.12 }, 0.02);
+      }
+      if (header) {
+        timeline.to(header, { autoAlpha: 0, y: 8, duration: 0.12 }, 0.04);
+      }
+      timeline.to(
+        panel,
+        {
+          autoAlpha: 0,
+          y: 12,
+          scale: 0.985,
+          duration: 0.18,
+        },
+        0.02,
+      );
+      timeline.to(backdrop, { autoAlpha: 0, duration: 0.18 }, 0);
+    }
+
+    return () => {
+      timeline.kill();
+      gsap.set([backdrop, panel], { clearProps: "transform,opacity,visibility" });
+      if (header) {
+        gsap.set(header, { clearProps: "transform,opacity,visibility" });
+      }
+      if (field) {
+        gsap.set(field, { clearProps: "transform,opacity,visibility" });
+      }
+      if (sections.length) {
+        gsap.set(sections, { clearProps: "transform,opacity,visibility" });
+      }
+    };
+  }, [open, reduceMotion]);
+
   const selectItem = (item) => {
     onRegisterCommand({
       id: item.id,
@@ -276,14 +425,14 @@ export default function SearchPalette({
     onClose();
   };
 
-  if (!open) {
+  if (!shouldRender) {
     return null;
   }
 
   return (
     <div className="search-palette" role="dialog" aria-modal="true" aria-labelledby="search-palette-title">
-      <div className="search-palette__backdrop" onClick={onClose} />
-      <div className="search-palette__panel">
+      <div ref={backdropRef} className="search-palette__backdrop" onClick={onClose} />
+      <div ref={panelRef} className="search-palette__panel">
         <div className="search-palette__header">
           <div>
             <p className="eyebrow">Command palette</p>

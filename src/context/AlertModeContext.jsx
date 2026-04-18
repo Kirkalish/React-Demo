@@ -201,6 +201,10 @@ function appendTimelineEntry(mission, label, state, time) {
   };
 }
 
+function createMissionTimelineEntry(label, state, time) {
+  return { label, state, time };
+}
+
 function createAlertEvent({ title, severity, type = "Operations", missionId }) {
   return {
     id: createId("alert"),
@@ -557,6 +561,89 @@ export function AlertModeProvider({ children }) {
     [activeMode, activeOperations.missions, addToast, pushActivityItems],
   );
 
+  const upsertMission = useCallback(
+    (mission) => {
+      const existingMission = activeOperations.missions.find((entry) => entry.id === mission.id);
+      const now = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      const assignedCrew = activeOperations.crew
+        .filter((member) => !member.hidden && member.missionId === mission.id)
+        .map((member) => member.id);
+
+      setOperationsByMode((current) => {
+        const nextMission = existingMission
+          ? {
+              ...existingMission,
+              ...mission,
+              assignedCrew,
+              objectives: [...mission.objectives],
+              resourceCost: { ...mission.resourceCost },
+              timeline: [
+                ...mission.timeline,
+                createMissionTimelineEntry("Mission record updated", mission.status, `${now} UTC`),
+              ],
+            }
+          : {
+              ...mission,
+              assignedCrew,
+              objectives: [...mission.objectives],
+              resourceCost: { ...mission.resourceCost },
+              timeline: [
+                createMissionTimelineEntry("Mission registered in command registry", mission.status, `${now} UTC`),
+              ],
+            };
+
+        const nextMissions = existingMission
+          ? current[activeMode].missions.map((entry) => (entry.id === mission.id ? nextMission : entry))
+          : [...current[activeMode].missions, nextMission];
+
+        return {
+          ...current,
+          [activeMode]: {
+            ...current[activeMode],
+            missions: nextMissions,
+          },
+        };
+      });
+
+      const title = existingMission
+        ? `Mission profile updated for ${mission.name}`
+        : `Mission created for ${mission.name}`;
+
+      pushActivityItems(activeMode, {
+        alert: createAlertEvent({
+          title,
+          severity: mission.status === "Alert" || mission.priority === "Critical"
+            ? "Critical"
+            : redAlert
+              ? "High"
+              : "Medium",
+          type: "Mission",
+          missionId: mission.id,
+        }),
+        transmission: createTransmissionEvent({
+          title: existingMission
+            ? `${mission.name} registry payload synchronized with new mission parameters.`
+            : `${mission.name} was added to the active mission registry.`,
+          source: "Mission registry",
+          status: existingMission ? "Updated" : "Created",
+          missionId: mission.id,
+        }),
+      });
+
+      addToast({
+        title,
+        description: existingMission
+          ? "The mission brief, registry listing, and live operations feed were updated."
+          : "A new mission was added to the registry and published to live operations.",
+      });
+    },
+    [activeMode, activeOperations.crew, activeOperations.missions, addToast, pushActivityItems, redAlert],
+  );
+
   const advanceMissionStatus = useCallback(
     (missionId) => {
       const mission = activeOperations.missions.find((entry) => entry.id === missionId);
@@ -788,6 +875,7 @@ export function AlertModeProvider({ children }) {
         updateThemePreference,
         resetPreferences,
         resetAppState,
+        upsertMission,
         updateMissionStatus,
         advanceMissionStatus,
       }}

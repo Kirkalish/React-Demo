@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import CrewCard from "../components/CrewCard";
 import EmptyState from "../components/EmptyState";
+import MissionEditModal from "../components/MissionEditModal";
 import StatusBadge from "../components/StatusBadge";
 import { useAlertMode } from "../context/AlertModeContext";
 import { getCrewByMission, getMissionById } from "../data/galaktikData";
@@ -10,6 +11,7 @@ import { getCrewByMission, getMissionById } from "../data/galaktikData";
 export default function MissionDetailPage() {
   const { missionId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
   const {
     data: { crew, missions },
     updateMissionStatus,
@@ -52,6 +54,7 @@ export default function MissionDetailPage() {
   }
 
   return (
+    <>
     <div className="stack-layout">
       <section className="panel detail-hero">
         <div className="panel__header">
@@ -146,6 +149,13 @@ export default function MissionDetailPage() {
             ) : (
               <span className="mission-detail__complete-label">Mission marked complete</span>
             )}
+            <button
+              type="button"
+              className="mission-detail__advance-button"
+              onClick={() => setEditOpen(true)}
+            >
+              Edit mission
+            </button>
             <Link className="text-link" to="/missions">
               Back to registry
             </Link>
@@ -205,5 +215,7 @@ export default function MissionDetailPage() {
         </div>
       </section>
     </div>
+    <MissionEditModal mission={mission} open={editOpen} onClose={() => setEditOpen(false)} />
+    </>
   );
 }

@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { useAlertMode } from "../context/AlertModeContext";
 
 function NotificationIcon() {
   return (
@@ -10,10 +12,132 @@ function NotificationIcon() {
 }
 
 export default function NotificationFeed({ open, onToggle, notifications, onClear }) {
+  const panelRef = useRef(null);
+  const [shouldRender, setShouldRender] = React.useState(open);
+  const {
+    preferences: {
+      accessibility: { reduceMotion },
+    },
+  } = useAlertMode();
+
+  useEffect(() => {
+    if (open) {
+      setShouldRender(true);
+    }
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!shouldRender || !panelRef.current) {
+      return;
+    }
+
+    if (reduceMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set(panelRef.current, { clearProps: "transform,opacity,visibility" });
+      if (!open) {
+        setShouldRender(false);
+      }
+      return;
+    }
+
+    let timeline;
+    const panel = panelRef.current;
+    const header = panel.querySelector(".notification-feed__header");
+    const items = panel.querySelectorAll(".notification-feed__item, .notification-feed__empty");
+
+    if (open) {
+      gsap.set(panel, { autoAlpha: 0, y: 14, scale: 0.98, transformOrigin: "bottom right" });
+      if (header) {
+        gsap.set(header, { autoAlpha: 0, y: 10 });
+      }
+      if (items.length) {
+        gsap.set(items, { autoAlpha: 0, y: 12 });
+      }
+
+      timeline = gsap.timeline({
+        defaults: {
+          ease: "power3.out",
+        },
+      });
+
+      timeline.to(panel, {
+        autoAlpha: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.24,
+      });
+
+      if (header) {
+        timeline.to(
+          header,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.2,
+          },
+          "-=0.12",
+        );
+      }
+
+      if (items.length) {
+        timeline.to(
+          items,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.22,
+            stagger: 0.035,
+            clearProps: "transform,opacity,visibility",
+          },
+          "-=0.08",
+        );
+      }
+    } else {
+      timeline = gsap.timeline({
+        defaults: {
+          ease: "power2.inOut",
+        },
+        onComplete: () => {
+          setShouldRender(false);
+        },
+      });
+
+      timeline.to(items, { autoAlpha: 0, y: 8, duration: 0.1, stagger: 0.02 }, 0);
+      if (header) {
+        timeline.to(header, { autoAlpha: 0, y: 8, duration: 0.1 }, 0.02);
+      }
+      timeline.to(
+        panel,
+        {
+          autoAlpha: 0,
+          y: 10,
+          scale: 0.985,
+          duration: 0.16,
+        },
+        0.02,
+      );
+    }
+
+    return () => {
+      timeline.kill();
+      gsap.set(panel, { clearProps: "transform,opacity,visibility" });
+      if (header) {
+        gsap.set(header, { clearProps: "transform,opacity,visibility" });
+      }
+      if (items.length) {
+        gsap.set(items, { clearProps: "transform,opacity,visibility" });
+      }
+    };
+  }, [notifications.length, open, reduceMotion, shouldRender]);
+
   return (
     <div className="notification-feed" aria-label="Notifications">
-      {open ? (
-        <section id="notification-feed-panel" className="notification-feed__panel" aria-label="Notification history">
+      {shouldRender ? (
+        <section
+          ref={panelRef}
+          id="notification-feed-panel"
+          className="notification-feed__panel"
+          aria-label="Notification history"
+        >
           <div className="notification-feed__header">
             <div>
               <p className="notification-feed__eyebrow">Notification log</p>

@@ -1,4 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { useAlertMode } from "../context/AlertModeContext";
 import { alertThemeOptions, nominalThemeOptions } from "../theme/themePresets";
 
 function ThemeOptionGroup({ label, options, value, onChange }) {
@@ -38,6 +40,20 @@ export default function SettingsModal({
   onClearLocalState,
 }) {
   const closeButtonRef = useRef(null);
+  const backdropRef = useRef(null);
+  const panelRef = useRef(null);
+  const [shouldRender, setShouldRender] = React.useState(open);
+  const {
+    preferences: {
+      accessibility: { reduceMotion },
+    },
+  } = useAlertMode();
+
+  useEffect(() => {
+    if (open) {
+      setShouldRender(true);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -51,14 +67,125 @@ export default function SettingsModal({
     return () => window.cancelAnimationFrame(frameId);
   }, [open]);
 
-  if (!open) {
+  useLayoutEffect(() => {
+    if (!shouldRender || !panelRef.current || !backdropRef.current) {
+      return;
+    }
+
+    if (reduceMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set([backdropRef.current, panelRef.current], { clearProps: "transform,opacity,visibility" });
+      if (!open) {
+        setShouldRender(false);
+      }
+      return;
+    }
+
+    let timeline;
+    const panel = panelRef.current;
+    const backdrop = backdropRef.current;
+    const header = panel.querySelector(".settings-modal__header");
+    const sections = panel.querySelectorAll(".settings-modal__section");
+
+    if (open) {
+      gsap.set(backdrop, { autoAlpha: 0 });
+      gsap.set(panel, { autoAlpha: 0, y: 18, scale: 0.985, transformOrigin: "center center" });
+      if (header) {
+        gsap.set(header, { autoAlpha: 0, y: 10 });
+      }
+      if (sections.length) {
+        gsap.set(sections, { autoAlpha: 0, y: 14 });
+      }
+
+      timeline = gsap.timeline({
+        defaults: {
+          ease: "power3.out",
+        },
+      });
+
+      timeline.to(backdrop, { autoAlpha: 1, duration: 0.18 }, 0);
+      timeline.to(
+        panel,
+        {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.24,
+        },
+        0,
+      );
+
+      if (header) {
+        timeline.to(
+          header,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.18,
+          },
+          "-=0.12",
+        );
+      }
+
+      if (sections.length) {
+        timeline.to(
+          sections,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.22,
+            stagger: 0.045,
+            clearProps: "transform,opacity,visibility",
+          },
+          "-=0.08",
+        );
+      }
+    } else {
+      timeline = gsap.timeline({
+        defaults: {
+          ease: "power2.inOut",
+        },
+        onComplete: () => {
+          setShouldRender(false);
+        },
+      });
+
+      timeline.to(sections, { autoAlpha: 0, y: 8, duration: 0.12, stagger: 0.025 }, 0);
+      if (header) {
+        timeline.to(header, { autoAlpha: 0, y: 8, duration: 0.12 }, 0.03);
+      }
+      timeline.to(
+        panel,
+        {
+          autoAlpha: 0,
+          y: 12,
+          scale: 0.985,
+          duration: 0.18,
+        },
+        0.02,
+      );
+      timeline.to(backdrop, { autoAlpha: 0, duration: 0.18 }, 0);
+    }
+
+    return () => {
+      timeline.kill();
+      gsap.set([backdrop, panel], { clearProps: "transform,opacity,visibility" });
+      if (header) {
+        gsap.set(header, { clearProps: "transform,opacity,visibility" });
+      }
+      if (sections.length) {
+        gsap.set(sections, { clearProps: "transform,opacity,visibility" });
+      }
+    };
+  }, [open, reduceMotion]);
+
+  if (!shouldRender) {
     return null;
   }
 
   return (
     <div className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
-      <div className="settings-modal__backdrop" onClick={onClose} />
-      <div className="settings-modal__panel">
+      <div ref={backdropRef} className="settings-modal__backdrop" onClick={onClose} />
+      <div ref={panelRef} className="settings-modal__panel">
         <div className="settings-modal__header">
           <div>
             <p className="eyebrow">System settings</p>

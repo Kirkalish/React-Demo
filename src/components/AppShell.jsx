@@ -191,10 +191,14 @@ function ShellLayout() {
       stage,
       {
         autoAlpha: 0,
+        y: 10,
+        filter: "blur(10px)",
       },
       {
         autoAlpha: 1,
-        duration: 0.18,
+        y: 0,
+        filter: "blur(0px)",
+        duration: 0.28,
       },
     );
 
@@ -202,26 +206,28 @@ function ShellLayout() {
       targets,
       {
         autoAlpha: 0,
-        y: 18,
+        y: 22,
+        scale: 0.985,
       },
       {
         autoAlpha: 1,
         y: 0,
-        duration: 0.42,
-        stagger: 0.045,
-        clearProps: "transform,opacity,visibility",
+        scale: 1,
+        duration: 0.46,
+        stagger: 0.04,
+        clearProps: "transform,opacity,visibility,filter",
       },
-      0,
+      0.04,
     );
 
     return () => {
       timeline.kill();
-      gsap.set(stage, { clearProps: "opacity,visibility" });
+      gsap.set(stage, { clearProps: "transform,opacity,visibility,filter" });
       gsap.set(targets, { clearProps: "transform,opacity,visibility" });
     };
   }, [isRevealed, location.pathname, reducedMotion]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!menuRef.current) {
       return;
     }
@@ -236,6 +242,9 @@ function ShellLayout() {
       gsap.set(menu, { display: "grid" });
       if (track) {
         gsap.set(track, { xPercent: deckView === "main" ? 0 : -50 });
+      }
+      if (actions.length) {
+        gsap.set(actions, { autoAlpha: 0, y: 14 });
       }
       const timeline = gsap.timeline();
       timeline.to(menu, {
@@ -279,20 +288,27 @@ function ShellLayout() {
     };
   }, [deckView, menuOpen, isRevealed]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!menuOpen || !deckTrackRef.current) {
       return;
     }
 
     const nextXPercent = deckView === "main" ? 0 : -50;
+    const activePage = deckTrackRef.current.querySelector(`[data-page="${deckView}"]`);
+    const animatedItems = activePage?.querySelectorAll(".control-dock__action, .control-dock__back");
 
     if (reducedMotion) {
       gsap.set(deckTrackRef.current, { xPercent: nextXPercent });
+      if (animatedItems?.length) {
+        gsap.set(animatedItems, { clearProps: "transform,opacity,visibility" });
+      }
       return;
     }
 
-    const activePage = deckTrackRef.current.querySelector(`[data-page="${deckView}"]`);
-    const animatedItems = activePage?.querySelectorAll(".control-dock__action, .control-dock__back");
+    if (animatedItems?.length) {
+      gsap.set(animatedItems, { autoAlpha: 0, y: 12 });
+    }
+
     const timeline = gsap.timeline();
 
     timeline.to(deckTrackRef.current, {
