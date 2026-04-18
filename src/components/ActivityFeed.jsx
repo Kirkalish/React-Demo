@@ -23,9 +23,9 @@ export default function ActivityFeed({
         </div>
       </div>
 
-      <div className="activity-feed__list">
+      <ul className="activity-feed__list" aria-label={title}>
         {items.map((item) => (
-          <article key={item.id} className="activity-feed__item">
+          <li key={item.id} className="activity-feed__item">
             <div>
               <strong>{item.title}</strong>
               {"type" in item ? (
@@ -42,9 +42,9 @@ export default function ActivityFeed({
             </div>
 
             {"severity" in item ? <StatusBadge label={item.severity} /> : null}
-          </article>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

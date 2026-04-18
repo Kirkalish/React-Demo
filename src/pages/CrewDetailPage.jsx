@@ -31,7 +31,7 @@ export default function CrewDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="panel loading-panel">
+      <section className="panel loading-panel" role="status" aria-live="polite">
         <p className="eyebrow">Syncing crew dossier</p>
         <h2>Pulling explorer profile...</h2>
       </section>

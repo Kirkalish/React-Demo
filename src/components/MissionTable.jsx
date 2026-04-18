@@ -18,6 +18,7 @@ export default function MissionTable({ missions }) {
           key={mission.id}
           to={`/missions/${mission.id}`}
           className="mission-table__row mission-table__row--link"
+          aria-label={`Open ${mission.name}, ${mission.status} status, ${mission.priority} priority, in ${mission.region}`}
         >
           <div>
             <strong>{mission.name}</strong>

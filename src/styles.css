@@ -73,11 +73,56 @@ a {
   text-decoration: none;
 }
 
+a,
+button,
+input,
+select,
+textarea,
+[tabindex]:not([tabindex="-1"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.app-shell--alert a:focus-visible,
+.app-shell--alert button:focus-visible,
+.app-shell--alert input:focus-visible,
+.app-shell--alert select:focus-visible,
+.app-shell--alert textarea:focus-visible,
+.app-shell--alert [tabindex]:not([tabindex="-1"]):focus-visible {
+  outline-color: #ff9ab1;
+}
+
 button,
 input,
 textarea,
 select {
   font: inherit;
+}
+
+.skip-link {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #0b1225;
+  color: var(--text);
+  transform: translateY(-150%);
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 #root {
@@ -804,6 +849,12 @@ select {
   margin: 10px 0 0;
 }
 
+.activity-feed__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .activity-feed--alert {
   background:
     linear-gradient(180deg, rgba(36, 11, 20, 0.9), rgba(20, 9, 16, 0.84));
@@ -1249,5 +1300,19 @@ select {
   .timeline__item {
     grid-template-columns: 1fr;
     align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

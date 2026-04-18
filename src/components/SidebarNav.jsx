@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useAlertMode } from "../context/AlertModeContext";
 
 function BrandMark() {
@@ -69,8 +69,8 @@ export default function SidebarNav() {
   const { redAlert, data } = useAlertMode();
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar__brand">
+    <aside className="sidebar" aria-label="Sidebar">
+      <Link className="sidebar__brand" to="/" aria-label="Go to mission control dashboard">
         <div className="sidebar__crest">
           <BrandMark />
         </div>
@@ -78,7 +78,7 @@ export default function SidebarNav() {
           <strong>Galaktik</strong>
           <p>Mission Control</p>
         </div>
-      </div>
+      </Link>
 
       <nav className="sidebar__nav" aria-label="Primary">
         {links.map((link) => (

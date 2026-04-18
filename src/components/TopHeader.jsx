@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAlertMode } from "../context/AlertModeContext";
 
@@ -35,6 +35,10 @@ export default function TopHeader() {
         }
       : pageMeta[location.pathname] ?? pageMeta["/"];
 
+  useEffect(() => {
+    document.title = `${meta.title} | Galaktik React Demo`;
+  }, [meta.title]);
+
   return (
     <header className={compactHeader ? "top-header top-header--compact" : "top-header"}>
       <div>
@@ -53,7 +57,11 @@ export default function TopHeader() {
           <span className="alert-toggle__dot" />
           {redAlert ? "Disable red alert" : "Enable red alert"}
         </button>
-        <div className={redAlert ? "status-chip status-chip--alert" : "status-chip"}>
+        <div
+          className={redAlert ? "status-chip status-chip--alert" : "status-chip"}
+          role="status"
+          aria-live="polite"
+        >
           <span className="status-chip__dot" />
           {data.networkLabel}
         </div>

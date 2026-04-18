@@ -17,6 +17,9 @@ function ShellLayout() {
 
   return (
     <div className={redAlert ? "app-shell app-shell--alert" : "app-shell"}>
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <div className="app-shell__glow app-shell__glow--left" />
       <div className="app-shell__glow app-shell__glow--right" />
 
@@ -24,7 +27,7 @@ function ShellLayout() {
 
       <div className="app-shell__content">
         <TopHeader />
-        <main className="app-main">
+        <main id="main-content" className="app-main" tabIndex={-1}>
           <Outlet />
         </main>
       </div>

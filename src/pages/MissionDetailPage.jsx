@@ -27,7 +27,7 @@ export default function MissionDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="panel loading-panel">
+      <section className="panel loading-panel" role="status" aria-live="polite">
         <p className="eyebrow">Fetching mission payload</p>
         <h2>Syncing sector data...</h2>
       </section>
