@@ -1,5 +1,6 @@
 import React from "react";
 import { useEffect, useState } from "react";
+import CrewEditModal from "../components/CrewEditModal";
 import { Link, useParams } from "react-router-dom";
 import EmptyState from "../components/EmptyState";
 import StatusBadge from "../components/StatusBadge";
@@ -13,6 +14,7 @@ import {
 export default function CrewDetailPage() {
   const { memberId } = useParams();
   const [isLoading, setIsLoading] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
   const {
     data: { crew, missions },
   } = useAlertMode();
@@ -48,7 +50,8 @@ export default function CrewDetailPage() {
   }
 
   return (
-    <div className="stack-layout">
+    <>
+      <div className="stack-layout">
       <section className="panel detail-hero">
         <div className="panel__header">
           <div className="crew-detail__identity">
@@ -62,6 +65,13 @@ export default function CrewDetailPage() {
             <Link className="text-link" to="/crew">
               Back to roster
             </Link>
+            <button
+              type="button"
+              className="crew-detail__edit-button"
+              onClick={() => setEditOpen(true)}
+            >
+              Edit crew member
+            </button>
             <div className="detail-hero__badges">
               <StatusBadge label={member.status} />
               <StatusBadge label={`Level ${member.level}`} tone="muted" />
@@ -162,6 +172,8 @@ export default function CrewDetailPage() {
           </p>
         </div>
       </section>
-    </div>
+      </div>
+      <CrewEditModal member={member} open={editOpen} onClose={() => setEditOpen(false)} />
+    </>
   );
 }

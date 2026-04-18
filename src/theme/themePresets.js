@@ -1,0 +1,133 @@
+export const nominalThemeOptions = [
+  {
+    value: "galactic",
+    label: "Galactic",
+    vars: {
+      "--bg-top": "#070b16",
+      "--bg-bottom": "#0a1020",
+      "--bg-orb-left-rgb": "36 198 255",
+      "--bg-orb-right-rgb": "194 92 255",
+      "--bg-orb-bottom-rgb": "255 202 106",
+      "--grid-rgb": "124 151 244",
+      "--surface-shell-rgb": "8 12 24",
+      "--surface-sidebar-top-rgb": "10 14 28",
+      "--surface-sidebar-bottom-rgb": "11 16 33",
+      "--surface-panel-top-rgb": "18 25 48",
+      "--surface-panel-bottom-rgb": "10 14 28",
+      "--surface-hero-top-rgb": "18 25 48",
+      "--surface-hero-bottom-rgb": "10 14 28",
+      "--surface-overlay-top-rgb": "7 11 22",
+      "--surface-overlay-bottom-rgb": "7 10 20",
+      "--surface-float-rgb": "10 14 28",
+      "--surface-float-strong-rgb": "15 21 40",
+      "--cyan": "#62dcff",
+      "--cyan-rgb": "98 220 255",
+      "--violet": "#b987ff",
+      "--violet-rgb": "185 135 255",
+      "--magenta": "#ff6adf",
+      "--magenta-rgb": "255 106 223",
+      "--gold": "#ffc86a",
+      "--gold-rgb": "255 200 106",
+    },
+  },
+  {
+    value: "aegis",
+    label: "Aegis",
+    vars: {
+      "--bg-top": "#041316",
+      "--bg-bottom": "#081a20",
+      "--bg-orb-left-rgb": "125 242 225",
+      "--bg-orb-right-rgb": "124 167 255",
+      "--bg-orb-bottom-rgb": "255 226 140",
+      "--grid-rgb": "93 181 201",
+      "--surface-shell-rgb": "8 24 30",
+      "--surface-sidebar-top-rgb": "10 30 36",
+      "--surface-sidebar-bottom-rgb": "12 38 44",
+      "--surface-panel-top-rgb": "14 40 48",
+      "--surface-panel-bottom-rgb": "8 24 30",
+      "--surface-hero-top-rgb": "16 48 56",
+      "--surface-hero-bottom-rgb": "8 24 30",
+      "--surface-overlay-top-rgb": "6 22 28",
+      "--surface-overlay-bottom-rgb": "7 19 24",
+      "--surface-float-rgb": "9 28 34",
+      "--surface-float-strong-rgb": "15 38 46",
+      "--cyan": "#7df2e1",
+      "--cyan-rgb": "125 242 225",
+      "--violet": "#7ca7ff",
+      "--violet-rgb": "124 167 255",
+      "--magenta": "#8de1ff",
+      "--magenta-rgb": "141 225 255",
+      "--gold": "#ffe28c",
+      "--gold-rgb": "255 226 140",
+    },
+  },
+  {
+    value: "solstice",
+    label: "Solstice",
+    vars: {
+      "--bg-top": "#140a18",
+      "--bg-bottom": "#21101c",
+      "--bg-orb-left-rgb": "99 212 255",
+      "--bg-orb-right-rgb": "255 151 221",
+      "--bg-orb-bottom-rgb": "255 214 110",
+      "--grid-rgb": "182 132 201",
+      "--surface-shell-rgb": "22 12 27",
+      "--surface-sidebar-top-rgb": "28 14 33",
+      "--surface-sidebar-bottom-rgb": "34 16 29",
+      "--surface-panel-top-rgb": "36 18 42",
+      "--surface-panel-bottom-rgb": "23 12 28",
+      "--surface-hero-top-rgb": "45 21 43",
+      "--surface-hero-bottom-rgb": "23 12 28",
+      "--surface-overlay-top-rgb": "21 11 28",
+      "--surface-overlay-bottom-rgb": "22 11 24",
+      "--surface-float-rgb": "24 13 28",
+      "--surface-float-strong-rgb": "39 18 37",
+      "--cyan": "#63d4ff",
+      "--cyan-rgb": "99 212 255",
+      "--violet": "#ff97dd",
+      "--violet-rgb": "255 151 221",
+      "--magenta": "#ffb36d",
+      "--magenta-rgb": "255 179 109",
+      "--gold": "#ffd66e",
+      "--gold-rgb": "255 214 110",
+    },
+  },
+];
+
+export const alertThemeOptions = [
+  {
+    value: "crimson",
+    label: "Crimson",
+    vars: {
+      "--alert-accent": "#ff9ab1",
+      "--alert-accent-rgb": "255 113 145",
+      "--alert-warm-rgb": "255 167 93",
+    },
+  },
+  {
+    value: "ember",
+    label: "Ember",
+    vars: {
+      "--alert-accent": "#ffb27a",
+      "--alert-accent-rgb": "255 163 97",
+      "--alert-warm-rgb": "255 212 111",
+    },
+  },
+  {
+    value: "ultraviolet",
+    label: "Ultraviolet",
+    vars: {
+      "--alert-accent": "#c7a2ff",
+      "--alert-accent-rgb": "170 118 255",
+      "--alert-warm-rgb": "255 110 214",
+    },
+  },
+];
+
+export function getNominalThemeVars(value) {
+  return nominalThemeOptions.find((option) => option.value === value)?.vars ?? nominalThemeOptions[0].vars;
+}
+
+export function getAlertThemeVars(value) {
+  return alertThemeOptions.find((option) => option.value === value)?.vars ?? alertThemeOptions[0].vars;
+}

@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAlertMode } from "../context/AlertModeContext";
 import StatusBadge from "./StatusBadge";
+import {
+  createBlankCrewMember,
+  formatRequiredFieldMessage,
+  normalizeEfficiency,
+  validateCrewForm,
+} from "./crewFormUtils";
 
 function buildMemberId(name, existingMembers) {
   const base = name
@@ -20,23 +26,6 @@ function buildMemberId(name, existingMembers) {
   return candidate;
 }
 
-function normalizeEfficiency(value) {
-  const trimmed = value.trim();
-  return trimmed.endsWith("%") ? trimmed : `${trimmed}%`;
-}
-
-function createBlankCrewMember(missions) {
-  return {
-    name: "",
-    role: "",
-    level: "5",
-    status: "On deck",
-    specialty: "",
-    missionId: missions[0]?.id ?? "",
-    efficiency: "90%",
-  };
-}
-
 export default function CrewManagerModal({ open, onClose }) {
   const {
     redAlert,
@@ -47,8 +36,8 @@ export default function CrewManagerModal({ open, onClose }) {
     resetCrewDataset,
   } = useAlertMode();
   const [createForm, setCreateForm] = useState(() => createBlankCrewMember(missions));
-  const [selectedId, setSelectedId] = useState("");
-  const [editForm, setEditForm] = useState(() => createBlankCrewMember(missions));
+  const [createError, setCreateError] = useState("");
+  const [createMissingFields, setCreateMissingFields] = useState([]);
 
   const sortedCrew = useMemo(
     () => [...crewDataset].sort((left, right) => left.name.localeCompare(right.name)),
@@ -57,39 +46,9 @@ export default function CrewManagerModal({ open, onClose }) {
 
   useEffect(() => {
     setCreateForm(createBlankCrewMember(missions));
+    setCreateError("");
+    setCreateMissingFields([]);
   }, [missions]);
-
-  useEffect(() => {
-    if (!sortedCrew.length) {
-      setSelectedId("");
-      setEditForm(createBlankCrewMember(missions));
-      return;
-    }
-
-    const nextSelectedId = sortedCrew.some((member) => member.id === selectedId)
-      ? selectedId
-      : sortedCrew[0].id;
-
-    setSelectedId(nextSelectedId);
-  }, [missions, selectedId, sortedCrew]);
-
-  useEffect(() => {
-    const selectedMember = sortedCrew.find((member) => member.id === selectedId);
-
-    if (!selectedMember) {
-      return;
-    }
-
-    setEditForm({
-      name: selectedMember.name,
-      role: selectedMember.role,
-      level: String(selectedMember.level),
-      status: selectedMember.status,
-      specialty: selectedMember.specialty,
-      missionId: selectedMember.missionId,
-      efficiency: selectedMember.efficiency,
-    });
-  }, [selectedId, sortedCrew]);
 
   if (!open) {
     return null;
@@ -98,7 +57,11 @@ export default function CrewManagerModal({ open, onClose }) {
   const handleCreate = (event) => {
     event.preventDefault();
 
-    if (!createForm.name.trim() || !createForm.role.trim() || !createForm.specialty.trim()) {
+    const missingFields = validateCrewForm(createForm);
+
+    if (missingFields.length) {
+      setCreateMissingFields(missingFields);
+      setCreateError(formatRequiredFieldMessage(missingFields));
       return;
     }
 
@@ -115,25 +78,8 @@ export default function CrewManagerModal({ open, onClose }) {
     });
 
     setCreateForm(createBlankCrewMember(missions));
-  };
-
-  const handleUpdate = (event) => {
-    event.preventDefault();
-
-    if (!selectedId) {
-      return;
-    }
-
-    upsertCrewMember({
-      id: selectedId,
-      name: editForm.name.trim(),
-      role: editForm.role.trim(),
-      level: Number(editForm.level),
-      status: editForm.status,
-      specialty: editForm.specialty.trim(),
-      missionId: editForm.missionId,
-      efficiency: normalizeEfficiency(editForm.efficiency),
-    });
+    setCreateError("");
+    setCreateMissingFields([]);
   };
 
   return (
@@ -150,197 +96,109 @@ export default function CrewManagerModal({ open, onClose }) {
           </button>
         </div>
 
-        <div className="crew-modal__grid">
-          <section className="crew-modal__section">
-            <div className="crew-modal__section-heading">
-              <h3>Create crew member</h3>
-              <p>Add a new explorer record to the current roster dataset.</p>
-            </div>
+        <section className="crew-modal__section crew-modal__section--full">
+          <div className="crew-modal__section-heading">
+            <h3>Create crew member</h3>
+            <p>Add a new explorer record to the current roster dataset.</p>
+          </div>
 
-            <form className="crew-form" onSubmit={handleCreate}>
-              <label>
-                Name
-                <input
-                  type="text"
-                  value={createForm.name}
-                  onChange={(event) =>
-                    setCreateForm((current) => ({ ...current, name: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Role
-                <input
-                  type="text"
-                  value={createForm.role}
-                  onChange={(event) =>
-                    setCreateForm((current) => ({ ...current, role: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Level
-                <input
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={createForm.level}
-                  onChange={(event) =>
-                    setCreateForm((current) => ({ ...current, level: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Status
-                <input
-                  type="text"
-                  value={createForm.status}
-                  onChange={(event) =>
-                    setCreateForm((current) => ({ ...current, status: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Specialty
-                <input
-                  type="text"
-                  value={createForm.specialty}
-                  onChange={(event) =>
-                    setCreateForm((current) => ({ ...current, specialty: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Mission
-                <select
-                  value={createForm.missionId}
-                  onChange={(event) =>
-                    setCreateForm((current) => ({ ...current, missionId: event.target.value }))
-                  }
-                >
-                  {missions.map((mission) => (
-                    <option key={mission.id} value={mission.id}>
-                      {mission.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Efficiency
-                <input
-                  type="text"
-                  value={createForm.efficiency}
-                  onChange={(event) =>
-                    setCreateForm((current) => ({ ...current, efficiency: event.target.value }))
-                  }
-                />
-              </label>
-              <button type="submit" className="crew-modal__button">
-                Create crew member
-              </button>
-            </form>
-          </section>
-
-          <section className="crew-modal__section">
-            <div className="crew-modal__section-heading">
-              <h3>Update crew member</h3>
-              <p>Edit a roster entry in the active dataset.</p>
-            </div>
-
-            <form className="crew-form" onSubmit={handleUpdate}>
-              <label>
-                Select crew member
-                <select value={selectedId} onChange={(event) => setSelectedId(event.target.value)}>
-                  {sortedCrew.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Name
-                <input
-                  type="text"
-                  value={editForm.name}
-                  onChange={(event) =>
-                    setEditForm((current) => ({ ...current, name: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Role
-                <input
-                  type="text"
-                  value={editForm.role}
-                  onChange={(event) =>
-                    setEditForm((current) => ({ ...current, role: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Level
-                <input
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={editForm.level}
-                  onChange={(event) =>
-                    setEditForm((current) => ({ ...current, level: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Status
-                <input
-                  type="text"
-                  value={editForm.status}
-                  onChange={(event) =>
-                    setEditForm((current) => ({ ...current, status: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Specialty
-                <input
-                  type="text"
-                  value={editForm.specialty}
-                  onChange={(event) =>
-                    setEditForm((current) => ({ ...current, specialty: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Mission
-                <select
-                  value={editForm.missionId}
-                  onChange={(event) =>
-                    setEditForm((current) => ({ ...current, missionId: event.target.value }))
-                  }
-                >
-                  {missions.map((mission) => (
-                    <option key={mission.id} value={mission.id}>
-                      {mission.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Efficiency
-                <input
-                  type="text"
-                  value={editForm.efficiency}
-                  onChange={(event) =>
-                    setEditForm((current) => ({ ...current, efficiency: event.target.value }))
-                  }
-                />
-              </label>
-              <button type="submit" className="crew-modal__button">
-                Update crew member
-              </button>
-            </form>
-          </section>
-        </div>
+          <form className="crew-form" onSubmit={handleCreate}>
+            <label>
+              Name
+              <input
+                type="text"
+                aria-invalid={createMissingFields.includes("name")}
+                value={createForm.name}
+                onChange={(event) => {
+                  setCreateForm((current) => ({ ...current, name: event.target.value }));
+                  setCreateError("");
+                  setCreateMissingFields((current) => current.filter((field) => field !== "name"));
+                }}
+              />
+            </label>
+            <label>
+              Role
+              <input
+                type="text"
+                aria-invalid={createMissingFields.includes("role")}
+                value={createForm.role}
+                onChange={(event) => {
+                  setCreateForm((current) => ({ ...current, role: event.target.value }));
+                  setCreateError("");
+                  setCreateMissingFields((current) => current.filter((field) => field !== "role"));
+                }}
+              />
+            </label>
+            <label>
+              Level
+              <input
+                type="number"
+                min="1"
+                max="12"
+                value={createForm.level}
+                onChange={(event) =>
+                  setCreateForm((current) => ({ ...current, level: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              Status
+              <input
+                type="text"
+                value={createForm.status}
+                onChange={(event) =>
+                  setCreateForm((current) => ({ ...current, status: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              Specialty
+              <input
+                type="text"
+                aria-invalid={createMissingFields.includes("specialty")}
+                value={createForm.specialty}
+                onChange={(event) => {
+                  setCreateForm((current) => ({ ...current, specialty: event.target.value }));
+                  setCreateError("");
+                  setCreateMissingFields((current) => current.filter((field) => field !== "specialty"));
+                }}
+              />
+            </label>
+            <label>
+              Mission
+              <select
+                value={createForm.missionId}
+                onChange={(event) =>
+                  setCreateForm((current) => ({ ...current, missionId: event.target.value }))
+                }
+              >
+                {missions.map((mission) => (
+                  <option key={mission.id} value={mission.id}>
+                    {mission.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Efficiency
+              <input
+                type="text"
+                value={createForm.efficiency}
+                onChange={(event) =>
+                  setCreateForm((current) => ({ ...current, efficiency: event.target.value }))
+                }
+              />
+            </label>
+            {createError ? (
+              <p className="crew-form__feedback" role="alert" aria-live="assertive">
+                {createError}
+              </p>
+            ) : null}
+            <button type="submit" className="crew-modal__button">
+              Create crew member
+            </button>
+          </form>
+        </section>
 
         <section className="crew-modal__section crew-modal__section--full">
           <div className="crew-modal__section-heading">

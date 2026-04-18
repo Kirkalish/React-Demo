@@ -1,8 +1,12 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import { AlertModeProvider, useAlertMode } from "../context/AlertModeContext";
+import { readAppState, updateStoredAppState } from "../lib/localState";
+import { getAlertThemeVars, getNominalThemeVars } from "../theme/themePresets";
 import SidebarNav from "./SidebarNav";
+import SearchPalette from "./SearchPalette";
+import SettingsModal from "./SettingsModal";
 import TopHeader from "./TopHeader";
 
 function MissionControlMark() {
@@ -41,31 +45,74 @@ function ControlDeckIcon() {
   );
 }
 
+function BackArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="control-dock__back-icon">
+      <path d="M14.5 5.5 8 12l6.5 6.5" />
+      <path d="M9 12h8.5" />
+    </svg>
+  );
+}
+
 function ShellLayout() {
-  const { redAlert, setRedAlert } = useAlertMode();
+  const {
+    redAlert,
+    setRedAlert,
+    data,
+    preferences,
+    updateAccessibilityPreference,
+    updateThemePreference,
+    resetPreferences,
+    resetAppState,
+  } = useAlertMode();
   const navigate = useNavigate();
   const location = useLocation();
+  const persistedState = useMemo(() => readAppState(), []);
   const overlayRef = useRef(null);
   const overlayButtonRef = useRef(null);
   const menuRef = useRef(null);
+  const deckTrackRef = useRef(null);
   const contentStageRef = useRef(null);
-  const [isRevealed, setIsRevealed] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(() => persistedState.isRevealed ?? false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [deckView, setDeckView] = useState("main");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [simulationStatus, setSimulationStatus] = useState("Simulation deck standing by.");
   const [isAnimating, setIsAnimating] = useState(false);
+  const reducedMotion =
+    preferences.accessibility.reduceMotion ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => {
     document.body.classList.toggle("body--alert", redAlert);
+    document.body.classList.toggle("body--contrast", preferences.accessibility.enhancedContrast);
 
     return () => {
       document.body.classList.remove("body--alert");
+      document.body.classList.remove("body--contrast");
     };
-  }, [redAlert]);
+  }, [preferences.accessibility.enhancedContrast, redAlert]);
+
+  useEffect(() => {
+    updateStoredAppState({ isRevealed });
+  }, [isRevealed]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const nominalVars = getNominalThemeVars(preferences.themes.nominal);
+    const alertVars = getAlertThemeVars(preferences.themes.alert);
+
+    Object.entries({ ...nominalVars, ...alertVars }).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+  }, [preferences.themes.alert, preferences.themes.nominal]);
 
   useEffect(() => {
     const { body, documentElement } = document;
     const previousBodyOverflow = body.style.overflow;
     const previousHtmlOverflow = documentElement.style.overflow;
-    const shouldLockScroll = !isRevealed;
+    const shouldLockScroll = !isRevealed || searchOpen || settingsOpen;
 
     if (shouldLockScroll) {
       body.style.overflow = "hidden";
@@ -79,7 +126,7 @@ function ShellLayout() {
       body.style.overflow = previousBodyOverflow;
       documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, [isRevealed]);
+  }, [isRevealed, searchOpen, settingsOpen]);
 
   useEffect(() => {
     if (!isRevealed && !isAnimating) {
@@ -89,16 +136,23 @@ function ShellLayout() {
 
   useLayoutEffect(() => {
     if (overlayRef.current) {
-      gsap.set(overlayRef.current, { yPercent: 0, autoAlpha: 1 });
+      gsap.set(overlayRef.current, isRevealed ? { yPercent: -100, autoAlpha: 0 } : { yPercent: 0, autoAlpha: 1 });
     }
 
     if (menuRef.current) {
       gsap.set(menuRef.current, { autoAlpha: 0, y: 20, scale: 0.97, display: "none" });
     }
-  }, []);
+
+    if (deckTrackRef.current) {
+      gsap.set(deckTrackRef.current, { xPercent: deckView === "main" ? 0 : -50 });
+    }
+  }, [isRevealed]);
 
   useEffect(() => {
     setMenuOpen(false);
+    setDeckView("main");
+    setSearchOpen(false);
+    setSettingsOpen(false);
   }, [location.pathname]);
 
   useLayoutEffect(() => {
@@ -106,7 +160,7 @@ function ShellLayout() {
       return;
     }
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (reducedMotion) {
       return;
     }
 
@@ -153,7 +207,7 @@ function ShellLayout() {
       gsap.set(stage, { clearProps: "opacity,visibility" });
       gsap.set(targets, { clearProps: "transform,opacity,visibility" });
     };
-  }, [location.pathname, isRevealed]);
+  }, [isRevealed, location.pathname, reducedMotion]);
 
   useEffect(() => {
     if (!menuRef.current) {
@@ -161,10 +215,16 @@ function ShellLayout() {
     }
 
     const menu = menuRef.current;
-    const actions = menu.querySelectorAll(".control-dock__action");
+    const track = deckTrackRef.current;
+    const actions = menu.querySelectorAll(
+      `[data-page="${deckView}"] .control-dock__action, [data-page="${deckView}"] .control-dock__back`,
+    );
 
     if (menuOpen && isRevealed) {
       gsap.set(menu, { display: "grid" });
+      if (track) {
+        gsap.set(track, { xPercent: deckView === "main" ? 0 : -50 });
+      }
       const timeline = gsap.timeline();
       timeline.to(menu, {
         autoAlpha: 1,
@@ -205,10 +265,113 @@ function ShellLayout() {
     return () => {
       tween.kill();
     };
-  }, [menuOpen, isRevealed]);
+  }, [deckView, menuOpen, isRevealed]);
+
+  useEffect(() => {
+    if (!menuOpen || !deckTrackRef.current) {
+      return;
+    }
+
+    const nextXPercent = deckView === "main" ? 0 : -50;
+
+    if (reducedMotion) {
+      gsap.set(deckTrackRef.current, { xPercent: nextXPercent });
+      return;
+    }
+
+    const activePage = deckTrackRef.current.querySelector(`[data-page="${deckView}"]`);
+    const animatedItems = activePage?.querySelectorAll(".control-dock__action, .control-dock__back");
+    const timeline = gsap.timeline();
+
+    timeline.to(deckTrackRef.current, {
+      xPercent: nextXPercent,
+      duration: 0.34,
+      ease: "power3.inOut",
+    });
+
+    if (animatedItems?.length) {
+      timeline.fromTo(
+        animatedItems,
+        {
+          autoAlpha: 0,
+          y: 12,
+        },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.2,
+          stagger: 0.03,
+          ease: "power2.out",
+          clearProps: "transform,opacity,visibility",
+        },
+        "-=0.12",
+      );
+    }
+
+    return () => {
+      timeline.kill();
+      if (animatedItems?.length) {
+        gsap.set(animatedItems, { clearProps: "transform,opacity,visibility" });
+      }
+    };
+  }, [deckView, menuOpen, reducedMotion]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      const targetTag = event.target instanceof HTMLElement ? event.target.tagName : "";
+      const isEditable =
+        targetTag === "INPUT" ||
+        targetTag === "TEXTAREA" ||
+        targetTag === "SELECT" ||
+        (event.target instanceof HTMLElement && event.target.isContentEditable);
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && isRevealed) {
+        event.preventDefault();
+        setSettingsOpen(false);
+        setSearchOpen(true);
+        setMenuOpen(false);
+        return;
+      }
+
+      if (event.key === "Escape") {
+        if (searchOpen) {
+          setSearchOpen(false);
+          return;
+        }
+
+        if (settingsOpen) {
+          setSettingsOpen(false);
+          return;
+        }
+
+        if (menuOpen) {
+          setMenuOpen(false);
+        }
+      }
+
+      if (!isEditable && isRevealed && event.key === "/") {
+        event.preventDefault();
+        setSettingsOpen(false);
+        setSearchOpen(true);
+        setMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isRevealed, menuOpen, searchOpen, settingsOpen]);
 
   const revealMissionControl = () => {
     if (!overlayRef.current || isAnimating || isRevealed) {
+      return;
+    }
+
+    if (reducedMotion) {
+      gsap.set(overlayRef.current, { yPercent: -100, autoAlpha: 0 });
+      setIsRevealed(true);
       return;
     }
 
@@ -232,8 +395,21 @@ function ShellLayout() {
       return;
     }
 
+    if (reducedMotion) {
+      setMenuOpen(false);
+      setSearchOpen(false);
+      setSettingsOpen(false);
+      setRedAlert(false);
+      navigate("/");
+      setIsRevealed(false);
+      gsap.set(overlayRef.current, { autoAlpha: 1, yPercent: 0, display: "block" });
+      return;
+    }
+
     setIsAnimating(true);
     setMenuOpen(false);
+    setSearchOpen(false);
+    setSettingsOpen(false);
     setRedAlert(false);
     navigate("/");
     gsap.set(overlayRef.current, { autoAlpha: 1, yPercent: -100, display: "block" });
@@ -248,20 +424,80 @@ function ShellLayout() {
     });
   };
 
+  const openSettings = () => {
+    setMenuOpen(false);
+    setDeckView("main");
+    setSearchOpen(false);
+    setSettingsOpen(true);
+  };
+
+  const openSearch = () => {
+    setMenuOpen(false);
+    setDeckView("main");
+    setSettingsOpen(false);
+    setSearchOpen(true);
+  };
+
+  const handleClearLocalState = () => {
+    resetAppState();
+    setMenuOpen(false);
+    setSearchOpen(false);
+    setSettingsOpen(false);
+    navigate("/");
+    setIsRevealed(false);
+    if (overlayRef.current) {
+      gsap.set(overlayRef.current, { autoAlpha: 1, yPercent: 0, display: "block" });
+    }
+  };
+
+  const handleSimulationAction = ({ alertState, nextPath, status, openPalette = false }) => {
+    if (typeof alertState === "boolean") {
+      setRedAlert(alertState);
+    }
+
+    if (nextPath) {
+      navigate(nextPath);
+    }
+
+    if (status) {
+      setSimulationStatus(status);
+    }
+
+    if (openPalette) {
+      setMenuOpen(false);
+      setDeckView("main");
+      setSettingsOpen(false);
+      setSearchOpen(true);
+      return;
+    }
+
+    setMenuOpen(false);
+    setDeckView("main");
+  };
+
+  const backgroundUiHidden = !isRevealed || searchOpen || settingsOpen;
+  const appShellClassName = [
+    "app-shell",
+    redAlert ? "app-shell--alert" : null,
+    preferences.accessibility.enhancedContrast ? "app-shell--contrast" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={redAlert ? "app-shell app-shell--alert" : "app-shell"}>
+    <div className={appShellClassName}>
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
       <div className="app-shell__glow app-shell__glow--left" />
       <div className="app-shell__glow app-shell__glow--right" />
 
-      <SidebarNav aria-hidden={!isRevealed} inert={!isRevealed ? true : undefined} />
+      <SidebarNav aria-hidden={backgroundUiHidden} inert={backgroundUiHidden ? true : undefined} />
 
       <div
         className="app-shell__content"
-        aria-hidden={!isRevealed}
-        inert={!isRevealed ? true : undefined}
+        aria-hidden={backgroundUiHidden}
+        inert={backgroundUiHidden ? true : undefined}
       >
         <TopHeader />
         <main id="main-content" className="app-main" tabIndex={-1}>
@@ -301,57 +537,219 @@ function ShellLayout() {
       </div>
 
       {isRevealed ? (
-        <div className="control-dock" aria-label="Mission control quick actions">
+        <div
+          className="control-dock"
+          aria-label="Mission control quick actions"
+          aria-hidden={searchOpen || settingsOpen}
+          inert={searchOpen || settingsOpen ? true : undefined}
+        >
           <div ref={menuRef} id="control-dock-panel" className="control-dock__panel">
-            <button
-              type="button"
-              className="control-dock__action control-dock__action--alert"
-              aria-pressed={redAlert}
-              onClick={() => {
-                setRedAlert((current) => !current);
-                setMenuOpen(false);
-              }}
-            >
-              <span className="control-dock__kicker">Alert state</span>
-              <strong>{redAlert ? "Disable red alert" : "Enable red alert"}</strong>
-              <small>{redAlert ? "Return the system to nominal thresholds." : "Shift the deck into failure mode."}</small>
-            </button>
+            <div className="control-dock__viewport">
+              <div ref={deckTrackRef} className="control-dock__track">
+                <section className="control-dock__page" data-page="main" aria-label="Control deck">
+                  <div className="control-dock__page-header">
+                    <div className="control-dock__page-copy">
+                      <p className="control-dock__title">Control deck</p>
+                      <h3>Mission controls</h3>
+                      <small>Quick access to navigation, preferences, and operations tooling.</small>
+                    </div>
+                  </div>
 
-            <button
-              type="button"
-              className="control-dock__action"
-              onClick={() => {
-                navigate("/missions");
-                setMenuOpen(false);
-              }}
-            >
-              <span className="control-dock__kicker">Registry</span>
-              <strong>Open missions</strong>
-              <small>Jump directly into active mission filters and detail views.</small>
-            </button>
+                  <div className="control-dock__actions">
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={() => setDeckView("simulation")}
+                    >
+                      <span className="control-dock__kicker">Simulation</span>
+                      <strong>Open simulation commands</strong>
+                      <small>Run alert drills, lock down sectors, and push scenario changes.</small>
+                    </button>
 
-            <button
-              type="button"
-              className="control-dock__action"
-              onClick={() => {
-                navigate("/crew");
-                setMenuOpen(false);
-              }}
-            >
-              <span className="control-dock__kicker">Roster</span>
-              <strong>Open crew</strong>
-              <small>Review explorer dossiers, assignments, and readiness.</small>
-            </button>
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={openSearch}
+                    >
+                      <span className="control-dock__kicker">Search</span>
+                      <strong>Open command palette</strong>
+                      <small>Find routes, crew dossiers, missions, and quick actions.</small>
+                    </button>
 
-            <button
-              type="button"
-              className="control-dock__action control-dock__action--logout"
-              onClick={returnToOverlay}
-            >
-              <span className="control-dock__kicker">Session</span>
-              <strong>Log off</strong>
-              <small>Return to the launch overlay and reset the alert state.</small>
-            </button>
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={() => {
+                        navigate("/missions");
+                        setMenuOpen(false);
+                        setDeckView("main");
+                      }}
+                    >
+                      <span className="control-dock__kicker">Registry</span>
+                      <strong>Open missions</strong>
+                      <small>Jump directly into active mission filters and detail views.</small>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={() => {
+                        navigate("/crew");
+                        setMenuOpen(false);
+                        setDeckView("main");
+                      }}
+                    >
+                      <span className="control-dock__kicker">Roster</span>
+                      <strong>Open crew</strong>
+                      <small>Review explorer dossiers, assignments, and readiness.</small>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={openSettings}
+                    >
+                      <span className="control-dock__kicker">Preferences</span>
+                      <strong>Open settings</strong>
+                      <small>Adjust themes, accessibility preferences, and saved state.</small>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="control-dock__action control-dock__action--logout"
+                      onClick={returnToOverlay}
+                    >
+                      <span className="control-dock__kicker">Session</span>
+                      <strong>Log off</strong>
+                      <small>Return to the launch overlay and reset the alert state.</small>
+                    </button>
+                  </div>
+                </section>
+
+                <section
+                  className="control-dock__page"
+                  data-page="simulation"
+                  aria-label="Simulation commands"
+                >
+                  <div className="control-dock__page-header">
+                    <div className="control-dock__page-copy">
+                      <p className="control-dock__title">Simulation panel</p>
+                      <h3>Simulation commands</h3>
+                      <small>{simulationStatus}</small>
+                    </div>
+                  </div>
+
+                  <div className="control-dock__actions">
+                    <button
+                      type="button"
+                      className="control-dock__action control-dock__action--alert"
+                      aria-pressed={redAlert}
+                      onClick={() =>
+                        handleSimulationAction({
+                          alertState: !redAlert,
+                          status: redAlert
+                            ? "Nominal thresholds restored across the deck."
+                            : "Red alert simulation engaged across all sectors.",
+                        })
+                      }
+                    >
+                      <span className="control-dock__kicker">Alert state</span>
+                      <strong>{redAlert ? "Disable red alert" : "Enable red alert"}</strong>
+                      <small>{redAlert ? "Return the deck to nominal thresholds." : "Push the station into critical failure mode."}</small>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={() =>
+                        handleSimulationAction({
+                          alertState: true,
+                          nextPath: "/missions",
+                          status: "Sector lockdown drill routed into the mission registry.",
+                        })
+                      }
+                    >
+                      <span className="control-dock__kicker">Scenario</span>
+                      <strong>Trigger sector lockdown</strong>
+                      <small>Escalate mission traffic and route operators to the registry.</small>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={() =>
+                        handleSimulationAction({
+                          nextPath: "/crew",
+                          status: "Crew readiness drill opened in the explorer roster.",
+                        })
+                      }
+                    >
+                      <span className="control-dock__kicker">Crew</span>
+                      <strong>Run readiness drill</strong>
+                      <small>Review explorer assignments and response posture under load.</small>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={() =>
+                        handleSimulationAction({
+                          openPalette: true,
+                          status: "Command palette opened for diagnostic sweep routing.",
+                        })
+                      }
+                    >
+                      <span className="control-dock__kicker">Diagnostics</span>
+                      <strong>Broadcast telemetry sweep</strong>
+                      <small>Open search commands to route a systems-wide response path.</small>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="control-dock__action"
+                      onClick={() =>
+                        handleSimulationAction({
+                          alertState: true,
+                          nextPath: "/",
+                          status: "Communications blackout staged on the mission dashboard.",
+                        })
+                      }
+                    >
+                      <span className="control-dock__kicker">Comms</span>
+                      <strong>Stage comms blackout</strong>
+                      <small>Simulate degraded telemetry and monitor dashboard readiness.</small>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="control-dock__action control-dock__action--logout"
+                      onClick={() =>
+                        handleSimulationAction({
+                          alertState: false,
+                          nextPath: "/",
+                          status: "Simulation reset complete. Systems returned to nominal.",
+                        })
+                      }
+                    >
+                      <span className="control-dock__kicker">Recovery</span>
+                      <strong>Restore nominal systems</strong>
+                      <small>Reset drills, clear incident load, and return to baseline view.</small>
+                    </button>
+                  </div>
+
+                  <div className="control-dock__page-footer">
+                    <button
+                      type="button"
+                      className="control-dock__back"
+                      onClick={() => setDeckView("main")}
+                    >
+                      <BackArrowIcon />
+                      <span>Back</span>
+                    </button>
+                  </div>
+                </section>
+              </div>
+            </div>
           </div>
 
           <button
@@ -367,6 +765,27 @@ function ShellLayout() {
           </button>
         </div>
       ) : null}
+
+      <SearchPalette
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onOpenSettings={openSettings}
+        onToggleAlert={() => setRedAlert((current) => !current)}
+        redAlert={redAlert}
+        missions={data.missions}
+        crew={data.crew}
+        navigate={navigate}
+      />
+
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        preferences={preferences}
+        onSetAccessibilityPreference={updateAccessibilityPreference}
+        onSetThemePreference={updateThemePreference}
+        onResetPreferences={resetPreferences}
+        onClearLocalState={handleClearLocalState}
+      />
     </div>
   );
 }

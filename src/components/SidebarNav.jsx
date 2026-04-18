@@ -107,6 +107,10 @@ export default function SidebarNav(props) {
             : "Operational confidence across active sectors"}
         </small>
       </div>
+
+      <span className="sidebar__hint">
+        Press <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>K</kbd> or <kbd>/</kbd> to open the search and command palette.
+      </span>
     </aside>
   );
 }

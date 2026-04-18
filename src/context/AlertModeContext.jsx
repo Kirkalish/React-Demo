@@ -1,20 +1,68 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { getScenarioData } from "../data/galaktikData";
+import { clearStoredAppState, readAppState, updateStoredAppState } from "../lib/localState";
 
 const AlertModeContext = createContext(null);
+
+const defaultPreferences = {
+  accessibility: {
+    reduceMotion: false,
+    enhancedContrast: false,
+  },
+  themes: {
+    nominal: "galactic",
+    alert: "crimson",
+  },
+};
 
 function cloneCrewList(list) {
   return list.map((member) => ({ ...member }));
 }
 
+function createInitialCrewByMode(nominalScenario, alertScenario) {
+  return {
+    nominal: cloneCrewList(nominalScenario.crew),
+    alert: cloneCrewList(alertScenario.crew),
+  };
+}
+
+function resolveStoredCrewByMode(storedValue, nominalScenario, alertScenario) {
+  const initial = createInitialCrewByMode(nominalScenario, alertScenario);
+
+  if (!storedValue || !Array.isArray(storedValue.nominal) || !Array.isArray(storedValue.alert)) {
+    return initial;
+  }
+
+  return {
+    nominal: storedValue.nominal.map((member) => ({ ...member })),
+    alert: storedValue.alert.map((member) => ({ ...member })),
+  };
+}
+
+function resolveStoredPreferences(storedValue) {
+  return {
+    accessibility: {
+      ...defaultPreferences.accessibility,
+      ...storedValue?.accessibility,
+    },
+    themes: {
+      ...defaultPreferences.themes,
+      ...storedValue?.themes,
+    },
+  };
+}
+
 export function AlertModeProvider({ children }) {
   const nominalScenario = useMemo(() => getScenarioData(false), []);
   const alertScenario = useMemo(() => getScenarioData(true), []);
-  const [redAlert, setRedAlert] = useState(false);
-  const [crewByMode, setCrewByMode] = useState(() => ({
-    nominal: cloneCrewList(nominalScenario.crew),
-    alert: cloneCrewList(alertScenario.crew),
-  }));
+  const storedState = useMemo(() => readAppState(), []);
+  const [redAlert, setRedAlert] = useState(() => storedState.redAlert ?? false);
+  const [crewByMode, setCrewByMode] = useState(() =>
+    resolveStoredCrewByMode(storedState.crewByMode, nominalScenario, alertScenario),
+  );
+  const [preferences, setPreferences] = useState(() =>
+    resolveStoredPreferences(storedState.preferences),
+  );
   const activeMode = redAlert ? "alert" : "nominal";
   const scenario = redAlert ? alertScenario : nominalScenario;
   const crewDataset = crewByMode[activeMode];
@@ -26,6 +74,18 @@ export function AlertModeProvider({ children }) {
     }),
     [crewDataset, scenario],
   );
+
+  useEffect(() => {
+    updateStoredAppState({ redAlert });
+  }, [redAlert]);
+
+  useEffect(() => {
+    updateStoredAppState({ crewByMode });
+  }, [crewByMode]);
+
+  useEffect(() => {
+    updateStoredAppState({ preferences });
+  }, [preferences]);
 
   const upsertCrewMember = (member) => {
     setCrewByMode((current) => {
@@ -56,6 +116,37 @@ export function AlertModeProvider({ children }) {
     }));
   };
 
+  const updateAccessibilityPreference = (key, value) => {
+    setPreferences((current) => ({
+      ...current,
+      accessibility: {
+        ...current.accessibility,
+        [key]: value,
+      },
+    }));
+  };
+
+  const updateThemePreference = (mode, value) => {
+    setPreferences((current) => ({
+      ...current,
+      themes: {
+        ...current.themes,
+        [mode]: value,
+      },
+    }));
+  };
+
+  const resetPreferences = () => {
+    setPreferences(defaultPreferences);
+  };
+
+  const resetAppState = () => {
+    clearStoredAppState();
+    setRedAlert(false);
+    setCrewByMode(createInitialCrewByMode(nominalScenario, alertScenario));
+    setPreferences(defaultPreferences);
+  };
+
   return (
     <AlertModeContext.Provider
       value={{
@@ -63,9 +154,14 @@ export function AlertModeProvider({ children }) {
         setRedAlert,
         data,
         crewDataset,
+        preferences,
         upsertCrewMember,
         setCrewMemberHidden,
         resetCrewDataset,
+        updateAccessibilityPreference,
+        updateThemePreference,
+        resetPreferences,
+        resetAppState,
       }}
     >
       {children}
