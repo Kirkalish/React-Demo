@@ -12,9 +12,17 @@ export default function MissionDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const {
     data: { crew, missions },
+    updateMissionStatus,
+    advanceMissionStatus,
   } = useAlertMode();
   const mission = missionId ? getMissionById(missions, missionId) : null;
   const assignedCrew = missionId ? getCrewByMission(crew, missionId) : [];
+  const missionStates = ["Planning", "Standby", "Active", "Alert", "Complete"];
+  const currentStatusIndex = mission ? missionStates.indexOf(mission.status) : -1;
+  const nextStatus =
+    mission && currentStatusIndex >= 0 && currentStatusIndex < missionStates.length - 1
+      ? missionStates[currentStatusIndex + 1]
+      : null;
 
   useEffect(() => {
     setIsLoading(true);
@@ -126,9 +134,46 @@ export default function MissionDetailPage() {
             <p className="eyebrow">Timeline</p>
             <h2>Status progression</h2>
           </div>
-          <Link className="text-link" to="/missions">
-            Back to registry
-          </Link>
+          <div className="mission-detail__header-actions">
+            {nextStatus ? (
+              <button
+                type="button"
+                className="mission-detail__advance-button"
+                onClick={() => advanceMissionStatus(mission.id)}
+              >
+                Advance to {nextStatus}
+              </button>
+            ) : (
+              <span className="mission-detail__complete-label">Mission marked complete</span>
+            )}
+            <Link className="text-link" to="/missions">
+              Back to registry
+            </Link>
+          </div>
+        </div>
+
+        <div className="mission-detail__status-actions" aria-label="Mission status controls">
+          {missionStates.map((status) => (
+            <button
+              key={status}
+              type="button"
+              className={
+                status === mission.status
+                  ? "mission-detail__status-button mission-detail__status-button--active"
+                  : "mission-detail__status-button"
+              }
+              disabled={status === mission.status}
+              onClick={() =>
+                updateMissionStatus(
+                  mission.id,
+                  status,
+                  `Mission control set ${mission.name} to ${status}.`,
+                )
+              }
+            >
+              {status}
+            </button>
+          ))}
         </div>
 
         <div className="timeline">

@@ -9,34 +9,71 @@ function SearchPaletteIcon() {
   );
 }
 
+function highlightMatch(text, query) {
+  const normalizedQuery = query.trim();
+
+  if (!normalizedQuery) {
+    return text;
+  }
+
+  const lowerText = text.toLowerCase();
+  const lowerQuery = normalizedQuery.toLowerCase();
+  const matchIndex = lowerText.indexOf(lowerQuery);
+
+  if (matchIndex === -1) {
+    return text;
+  }
+
+  const start = text.slice(0, matchIndex);
+  const match = text.slice(matchIndex, matchIndex + normalizedQuery.length);
+  const end = text.slice(matchIndex + normalizedQuery.length);
+
+  return (
+    <>
+      {start}
+      <mark className="search-palette__mark">{match}</mark>
+      {end}
+    </>
+  );
+}
+
+function scoreResult(item, normalizedQuery) {
+  const haystack = `${item.label} ${item.description} ${item.keywords}`.toLowerCase();
+  const label = item.label.toLowerCase();
+
+  if (label.startsWith(normalizedQuery)) {
+    return 0;
+  }
+
+  if (label.includes(normalizedQuery)) {
+    return 1;
+  }
+
+  if (haystack.includes(normalizedQuery)) {
+    return 2;
+  }
+
+  return 3;
+}
+
 export default function SearchPalette({
   open,
   onClose,
   onOpenSettings,
-  onToggleAlert,
   redAlert,
   missions,
   crew,
   navigate,
+  recentCommands,
+  onRegisterCommand,
+  onExecuteSimulation,
 }) {
   const inputRef = useRef(null);
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  useEffect(() => {
-    if (!open) {
-      setQuery("");
-      return;
-    }
-
-    const frameId = window.requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [open]);
-
-  const results = useMemo(() => {
-    const commands = [
+  const allCommands = useMemo(
+    () => [
       {
         id: "route-dashboard",
         group: "Navigation",
@@ -69,7 +106,7 @@ export default function SearchPalette({
           ? "Return thresholds to nominal operating levels."
           : "Shift the deck into critical failure simulation.",
         keywords: "red alert toggle state",
-        onSelect: onToggleAlert,
+        onSelect: () => onExecuteSimulation("toggle-alert"),
       },
       {
         id: "action-settings",
@@ -78,6 +115,68 @@ export default function SearchPalette({
         description: "Adjust saved preferences, themes, and local state.",
         keywords: "settings preferences theme accessibility",
         onSelect: onOpenSettings,
+      },
+      {
+        id: "toggle-alert",
+        group: "Simulation",
+        label: redAlert ? "Simulate nominal recovery" : "Simulate red alert state",
+        description: redAlert
+          ? "Restore standard operating thresholds from the palette."
+          : "Push the live deck into critical-response state.",
+        keywords: "simulation alert nominal recovery",
+        onSelect: () => onExecuteSimulation("toggle-alert"),
+      },
+      {
+        id: "sector-lockdown",
+        group: "Simulation",
+        label: "Run sector lockdown drill",
+        description: "Escalate Atlas Gate and route the view to the registry.",
+        keywords: "simulation lockdown atlas registry",
+        onSelect: () => {
+          onExecuteSimulation("sector-lockdown");
+          navigate("/missions");
+        },
+      },
+      {
+        id: "readiness-drill",
+        group: "Simulation",
+        label: "Run crew readiness drill",
+        description: "Adjust roster readiness and open explorer operations.",
+        keywords: "simulation crew roster drill",
+        onSelect: () => {
+          onExecuteSimulation("readiness-drill");
+          navigate("/crew");
+        },
+      },
+      {
+        id: "telemetry-sweep",
+        group: "Simulation",
+        label: "Broadcast telemetry sweep",
+        description: "Inject a diagnostics event into the live feeds.",
+        keywords: "simulation diagnostics telemetry sweep",
+        onSelect: () => onExecuteSimulation("telemetry-sweep"),
+      },
+      {
+        id: "comms-blackout",
+        group: "Simulation",
+        label: "Stage communications blackout",
+        description: "Push Orion relay lanes into blackout response mode.",
+        keywords: "simulation communications blackout orion relay",
+        onSelect: () => {
+          onExecuteSimulation("comms-blackout");
+          navigate("/");
+        },
+      },
+      {
+        id: "restore-nominal",
+        group: "Simulation",
+        label: "Restore baseline simulation",
+        description: "Reset drills and recover the default scenario state.",
+        keywords: "simulation restore reset baseline",
+        onSelect: () => {
+          onExecuteSimulation("restore-nominal");
+          navigate("/");
+        },
       },
       ...missions.map((mission) => ({
         id: `mission-${mission.id}`,
@@ -95,21 +194,87 @@ export default function SearchPalette({
         keywords: `${member.name} ${member.role} ${member.status} ${member.specialty}`,
         onSelect: () => navigate(`/crew/${member.id}`),
       })),
-    ];
+    ],
+    [crew, missions, navigate, onExecuteSimulation, onOpenSettings, redAlert],
+  );
 
+  const resultSections = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const recentLookup = new Set(recentCommands.map((item) => item.id));
+    const recentResults = recentCommands
+      .map((item) => allCommands.find((command) => command.id === item.id))
+      .filter(Boolean);
+    const filtered = normalizedQuery
+      ? allCommands
+          .filter((item) => {
+            const haystack = `${item.label} ${item.description} ${item.keywords}`.toLowerCase();
+            return haystack.includes(normalizedQuery);
+          })
+          .sort((left, right) => scoreResult(left, normalizedQuery) - scoreResult(right, normalizedQuery))
+      : allCommands;
 
-    if (!normalizedQuery) {
-      return commands.slice(0, 10);
+    const sections = [];
+
+    if (!normalizedQuery && recentResults.length) {
+      sections.push({
+        id: "recent",
+        title: "Recent commands",
+        items: recentResults.slice(0, 5),
+      });
     }
 
-    return commands
-      .filter((item) => {
-        const haystack = `${item.label} ${item.description} ${item.keywords}`.toLowerCase();
-        return haystack.includes(normalizedQuery);
-      })
-      .slice(0, 12);
-  }, [crew, missions, navigate, onOpenSettings, onToggleAlert, query, redAlert]);
+    ["Navigation", "Actions", "Simulation", "Missions", "Crew"].forEach((group) => {
+      const groupItems = filtered.filter(
+        (item) => item.group === group && (normalizedQuery || !recentLookup.has(item.id)),
+      );
+
+      if (!groupItems.length) {
+        return;
+      }
+
+      sections.push({
+        id: group.toLowerCase(),
+        title: group,
+        items: groupItems.slice(0, normalizedQuery ? 8 : group === "Simulation" ? 4 : 5),
+      });
+    });
+
+    return sections;
+  }, [allCommands, query, recentCommands]);
+
+  const flatResults = useMemo(
+    () => resultSections.flatMap((section) => section.items),
+    [resultSections],
+  );
+
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setActiveIndex(0);
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [open]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query, open]);
+
+  const selectItem = (item) => {
+    onRegisterCommand({
+      id: item.id,
+      label: item.label,
+      description: item.description,
+      group: item.group,
+    });
+    item.onSelect();
+    onClose();
+  };
 
   if (!open) {
     return null;
@@ -143,28 +308,62 @@ export default function SearchPalette({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (!flatResults.length) {
+                  return;
+                }
+
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  setActiveIndex((current) => (current + 1) % flatResults.length);
+                }
+
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  setActiveIndex((current) => (current - 1 + flatResults.length) % flatResults.length);
+                }
+
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  selectItem(flatResults[activeIndex]);
+                }
+              }}
               placeholder="Type a route, crew member, mission, or command"
             />
             <span className="search-palette__hint">Ctrl/Cmd + K</span>
           </div>
         </label>
 
-        <div className="search-palette__results" role="list">
-          {results.length ? (
-            results.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="search-palette__result"
-                onClick={() => {
-                  item.onSelect();
-                  onClose();
-                }}
-              >
-                <span className="search-palette__result-group">{item.group}</span>
-                <strong>{item.label}</strong>
-                <small>{item.description}</small>
-              </button>
+        <div className="search-palette__results" role="listbox" aria-label="Command palette results">
+          {resultSections.length ? (
+            resultSections.map((section) => (
+              <section key={section.id} className="search-palette__section" aria-label={section.title}>
+                <div className="search-palette__section-header">
+                  <span>{section.title}</span>
+                </div>
+                <div className="search-palette__section-results">
+                  {section.items.map((item) => {
+                    const itemIndex = flatResults.findIndex((entry) => entry.id === item.id);
+                    const isActive = itemIndex === activeIndex;
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="option"
+                        aria-selected={isActive}
+                        className={isActive ? "search-palette__result search-palette__result--active" : "search-palette__result"}
+                        onMouseEnter={() => setActiveIndex(itemIndex)}
+                        onClick={() => selectItem(item)}
+                      >
+                        <span className="search-palette__result-group">{item.group}</span>
+                        <strong>{highlightMatch(item.label, query)}</strong>
+                        <small>{highlightMatch(item.description, query)}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             ))
           ) : (
             <div className="search-palette__empty">

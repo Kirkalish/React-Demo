@@ -7,6 +7,8 @@ import { getAlertThemeVars, getNominalThemeVars } from "../theme/themePresets";
 import SidebarNav from "./SidebarNav";
 import SearchPalette from "./SearchPalette";
 import SettingsModal from "./SettingsModal";
+import NotificationFeed from "./NotificationFeed";
+import ToastStack from "./ToastStack";
 import TopHeader from "./TopHeader";
 
 function MissionControlMark() {
@@ -60,6 +62,14 @@ function ShellLayout() {
     setRedAlert,
     data,
     preferences,
+    recentCommands,
+    notificationFeed,
+    toasts,
+    dismissToast,
+    clearToasts,
+    clearNotificationFeed,
+    registerCommand,
+    executeSimulation,
     updateAccessibilityPreference,
     updateThemePreference,
     resetPreferences,
@@ -78,6 +88,7 @@ function ShellLayout() {
   const [deckView, setDeckView] = useState("main");
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [simulationStatus, setSimulationStatus] = useState("Simulation deck standing by.");
   const [isAnimating, setIsAnimating] = useState(false);
   const reducedMotion =
@@ -153,6 +164,7 @@ function ShellLayout() {
     setDeckView("main");
     setSearchOpen(false);
     setSettingsOpen(false);
+    setNotificationOpen(false);
   }, [location.pathname]);
 
   useLayoutEffect(() => {
@@ -328,6 +340,7 @@ function ShellLayout() {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && isRevealed) {
         event.preventDefault();
         setSettingsOpen(false);
+        setNotificationOpen(false);
         setSearchOpen(true);
         setMenuOpen(false);
         return;
@@ -344,6 +357,11 @@ function ShellLayout() {
           return;
         }
 
+        if (notificationOpen) {
+          setNotificationOpen(false);
+          return;
+        }
+
         if (menuOpen) {
           setMenuOpen(false);
         }
@@ -352,6 +370,7 @@ function ShellLayout() {
       if (!isEditable && isRevealed && event.key === "/") {
         event.preventDefault();
         setSettingsOpen(false);
+        setNotificationOpen(false);
         setSearchOpen(true);
         setMenuOpen(false);
       }
@@ -362,7 +381,7 @@ function ShellLayout() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isRevealed, menuOpen, searchOpen, settingsOpen]);
+  }, [isRevealed, menuOpen, notificationOpen, searchOpen, settingsOpen]);
 
   const revealMissionControl = () => {
     if (!overlayRef.current || isAnimating || isRevealed) {
@@ -399,6 +418,7 @@ function ShellLayout() {
       setMenuOpen(false);
       setSearchOpen(false);
       setSettingsOpen(false);
+      setNotificationOpen(false);
       setRedAlert(false);
       navigate("/");
       setIsRevealed(false);
@@ -410,6 +430,7 @@ function ShellLayout() {
     setMenuOpen(false);
     setSearchOpen(false);
     setSettingsOpen(false);
+    setNotificationOpen(false);
     setRedAlert(false);
     navigate("/");
     gsap.set(overlayRef.current, { autoAlpha: 1, yPercent: -100, display: "block" });
@@ -428,6 +449,7 @@ function ShellLayout() {
     setMenuOpen(false);
     setDeckView("main");
     setSearchOpen(false);
+    setNotificationOpen(false);
     setSettingsOpen(true);
   };
 
@@ -435,6 +457,7 @@ function ShellLayout() {
     setMenuOpen(false);
     setDeckView("main");
     setSettingsOpen(false);
+    setNotificationOpen(false);
     setSearchOpen(true);
   };
 
@@ -443,6 +466,7 @@ function ShellLayout() {
     setMenuOpen(false);
     setSearchOpen(false);
     setSettingsOpen(false);
+    setNotificationOpen(false);
     navigate("/");
     setIsRevealed(false);
     if (overlayRef.current) {
@@ -450,20 +474,83 @@ function ShellLayout() {
     }
   };
 
-  const handleSimulationAction = ({ alertState, nextPath, status, openPalette = false }) => {
-    if (typeof alertState === "boolean") {
-      setRedAlert(alertState);
+  const simulationCommands = useMemo(
+    () => [
+      {
+        id: "toggle-alert",
+        kicker: "Alert state",
+        label: redAlert ? "Disable red alert" : "Enable red alert",
+        description: redAlert
+          ? "Return the deck to nominal thresholds."
+          : "Push the station into critical failure mode.",
+        tone: "control-dock__action control-dock__action--alert",
+        status: redAlert
+          ? "Nominal thresholds restored across the deck."
+          : "Red alert simulation engaged across all sectors.",
+      },
+      {
+        id: "sector-lockdown",
+        kicker: "Scenario",
+        label: "Trigger sector lockdown",
+        description: "Escalate mission traffic and route operators to the registry.",
+        nextPath: "/missions",
+        status: "Sector lockdown drill routed into the mission registry.",
+      },
+      {
+        id: "readiness-drill",
+        kicker: "Crew",
+        label: "Run readiness drill",
+        description: "Review explorer assignments and response posture under load.",
+        nextPath: "/crew",
+        status: "Crew readiness drill opened in the explorer roster.",
+      },
+      {
+        id: "telemetry-sweep",
+        kicker: "Diagnostics",
+        label: "Broadcast telemetry sweep",
+        description: "Open search commands to route a systems-wide response path.",
+        openPalette: true,
+        status: "Command palette opened for diagnostic sweep routing.",
+      },
+      {
+        id: "comms-blackout",
+        kicker: "Comms",
+        label: "Stage comms blackout",
+        description: "Simulate degraded telemetry and monitor dashboard readiness.",
+        nextPath: "/",
+        status: "Communications blackout staged on the mission dashboard.",
+      },
+      {
+        id: "restore-nominal",
+        kicker: "Recovery",
+        label: "Restore nominal systems",
+        description: "Reset drills, clear incident load, and return to baseline view.",
+        nextPath: "/",
+        tone: "control-dock__action control-dock__action--logout",
+        status: "Simulation reset complete. Systems returned to nominal.",
+      },
+    ],
+    [redAlert],
+  );
+
+  const handleSimulationAction = (command) => {
+    executeSimulation(command.id);
+    registerCommand({
+      id: command.id,
+      label: command.label,
+      description: command.description,
+      group: "Simulation",
+    });
+
+    if (command.status) {
+      setSimulationStatus(command.status);
     }
 
-    if (nextPath) {
-      navigate(nextPath);
+    if (command.nextPath) {
+      navigate(command.nextPath);
     }
 
-    if (status) {
-      setSimulationStatus(status);
-    }
-
-    if (openPalette) {
+    if (command.openPalette) {
       setMenuOpen(false);
       setDeckView("main");
       setSettingsOpen(false);
@@ -473,6 +560,25 @@ function ShellLayout() {
 
     setMenuOpen(false);
     setDeckView("main");
+  };
+
+  const handleQuickNavigation = (command, path) => {
+    registerCommand(command);
+    navigate(path);
+    setMenuOpen(false);
+    setDeckView("main");
+  };
+
+  const toggleNotificationFeed = () => {
+    setNotificationOpen((current) => {
+      const nextOpen = !current;
+
+      if (nextOpen) {
+        clearToasts();
+      }
+
+      return nextOpen;
+    });
   };
 
   const backgroundUiHidden = !isRevealed || searchOpen || settingsOpen;
@@ -559,7 +665,15 @@ function ShellLayout() {
                     <button
                       type="button"
                       className="control-dock__action"
-                      onClick={() => setDeckView("simulation")}
+                      onClick={() => {
+                        registerCommand({
+                          id: "deck-simulation",
+                          label: "Open simulation commands",
+                          description: "Run alert drills, lock down sectors, and push scenario changes.",
+                          group: "Control deck",
+                        });
+                        setDeckView("simulation");
+                      }}
                     >
                       <span className="control-dock__kicker">Simulation</span>
                       <strong>Open simulation commands</strong>
@@ -569,7 +683,15 @@ function ShellLayout() {
                     <button
                       type="button"
                       className="control-dock__action"
-                      onClick={openSearch}
+                      onClick={() => {
+                        registerCommand({
+                          id: "command-palette",
+                          label: "Open command palette",
+                          description: "Find routes, crew dossiers, missions, and quick actions.",
+                          group: "Search",
+                        });
+                        openSearch();
+                      }}
                     >
                       <span className="control-dock__kicker">Search</span>
                       <strong>Open command palette</strong>
@@ -579,11 +701,17 @@ function ShellLayout() {
                     <button
                       type="button"
                       className="control-dock__action"
-                      onClick={() => {
-                        navigate("/missions");
-                        setMenuOpen(false);
-                        setDeckView("main");
-                      }}
+                      onClick={() =>
+                        handleQuickNavigation(
+                          {
+                            id: "route-missions",
+                            label: "Open mission registry",
+                            description: "Jump directly into mission filters and detail views.",
+                            group: "Navigation",
+                          },
+                          "/missions",
+                        )
+                      }
                     >
                       <span className="control-dock__kicker">Registry</span>
                       <strong>Open missions</strong>
@@ -593,11 +721,17 @@ function ShellLayout() {
                     <button
                       type="button"
                       className="control-dock__action"
-                      onClick={() => {
-                        navigate("/crew");
-                        setMenuOpen(false);
-                        setDeckView("main");
-                      }}
+                      onClick={() =>
+                        handleQuickNavigation(
+                          {
+                            id: "route-crew",
+                            label: "Open explorer roster",
+                            description: "Review explorer dossiers, assignments, and readiness.",
+                            group: "Navigation",
+                          },
+                          "/crew",
+                        )
+                      }
                     >
                       <span className="control-dock__kicker">Roster</span>
                       <strong>Open crew</strong>
@@ -607,7 +741,15 @@ function ShellLayout() {
                     <button
                       type="button"
                       className="control-dock__action"
-                      onClick={openSettings}
+                      onClick={() => {
+                        registerCommand({
+                          id: "action-settings",
+                          label: "Open settings",
+                          description: "Adjust themes, accessibility preferences, and saved state.",
+                          group: "Actions",
+                        });
+                        openSettings();
+                      }}
                     >
                       <span className="control-dock__kicker">Preferences</span>
                       <strong>Open settings</strong>
@@ -640,101 +782,19 @@ function ShellLayout() {
                   </div>
 
                   <div className="control-dock__actions">
-                    <button
-                      type="button"
-                      className="control-dock__action control-dock__action--alert"
-                      aria-pressed={redAlert}
-                      onClick={() =>
-                        handleSimulationAction({
-                          alertState: !redAlert,
-                          status: redAlert
-                            ? "Nominal thresholds restored across the deck."
-                            : "Red alert simulation engaged across all sectors.",
-                        })
-                      }
-                    >
-                      <span className="control-dock__kicker">Alert state</span>
-                      <strong>{redAlert ? "Disable red alert" : "Enable red alert"}</strong>
-                      <small>{redAlert ? "Return the deck to nominal thresholds." : "Push the station into critical failure mode."}</small>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="control-dock__action"
-                      onClick={() =>
-                        handleSimulationAction({
-                          alertState: true,
-                          nextPath: "/missions",
-                          status: "Sector lockdown drill routed into the mission registry.",
-                        })
-                      }
-                    >
-                      <span className="control-dock__kicker">Scenario</span>
-                      <strong>Trigger sector lockdown</strong>
-                      <small>Escalate mission traffic and route operators to the registry.</small>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="control-dock__action"
-                      onClick={() =>
-                        handleSimulationAction({
-                          nextPath: "/crew",
-                          status: "Crew readiness drill opened in the explorer roster.",
-                        })
-                      }
-                    >
-                      <span className="control-dock__kicker">Crew</span>
-                      <strong>Run readiness drill</strong>
-                      <small>Review explorer assignments and response posture under load.</small>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="control-dock__action"
-                      onClick={() =>
-                        handleSimulationAction({
-                          openPalette: true,
-                          status: "Command palette opened for diagnostic sweep routing.",
-                        })
-                      }
-                    >
-                      <span className="control-dock__kicker">Diagnostics</span>
-                      <strong>Broadcast telemetry sweep</strong>
-                      <small>Open search commands to route a systems-wide response path.</small>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="control-dock__action"
-                      onClick={() =>
-                        handleSimulationAction({
-                          alertState: true,
-                          nextPath: "/",
-                          status: "Communications blackout staged on the mission dashboard.",
-                        })
-                      }
-                    >
-                      <span className="control-dock__kicker">Comms</span>
-                      <strong>Stage comms blackout</strong>
-                      <small>Simulate degraded telemetry and monitor dashboard readiness.</small>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="control-dock__action control-dock__action--logout"
-                      onClick={() =>
-                        handleSimulationAction({
-                          alertState: false,
-                          nextPath: "/",
-                          status: "Simulation reset complete. Systems returned to nominal.",
-                        })
-                      }
-                    >
-                      <span className="control-dock__kicker">Recovery</span>
-                      <strong>Restore nominal systems</strong>
-                      <small>Reset drills, clear incident load, and return to baseline view.</small>
-                    </button>
+                    {simulationCommands.map((command) => (
+                      <button
+                        key={command.id}
+                        type="button"
+                        className={command.tone ?? "control-dock__action"}
+                        aria-pressed={command.id === "toggle-alert" ? redAlert : undefined}
+                        onClick={() => handleSimulationAction(command)}
+                      >
+                        <span className="control-dock__kicker">{command.kicker}</span>
+                        <strong>{command.label}</strong>
+                        <small>{command.description}</small>
+                      </button>
+                    ))}
                   </div>
 
                   <div className="control-dock__page-footer">
@@ -770,11 +830,13 @@ function ShellLayout() {
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         onOpenSettings={openSettings}
-        onToggleAlert={() => setRedAlert((current) => !current)}
         redAlert={redAlert}
         missions={data.missions}
         crew={data.crew}
         navigate={navigate}
+        recentCommands={recentCommands}
+        onRegisterCommand={registerCommand}
+        onExecuteSimulation={executeSimulation}
       />
 
       <SettingsModal
@@ -786,6 +848,17 @@ function ShellLayout() {
         onResetPreferences={resetPreferences}
         onClearLocalState={handleClearLocalState}
       />
+
+      {isRevealed ? (
+        <NotificationFeed
+          open={notificationOpen}
+          onToggle={toggleNotificationFeed}
+          notifications={notificationFeed}
+          onClear={clearNotificationFeed}
+        />
+      ) : null}
+
+      <ToastStack open={isRevealed} toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }
