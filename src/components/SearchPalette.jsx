@@ -264,17 +264,34 @@ export default function SearchPalette({
   }, [open]);
 
   useEffect(() => {
-    if (!open) {
-      setQuery("");
-      setActiveIndex(0);
+    if (!open || !shouldRender) {
+      if (!open) {
+        setQuery("");
+        setActiveIndex(0);
+      }
       return;
     }
 
-    const frameId = window.requestAnimationFrame(() => {
-      inputRef.current?.focus();
+    let outerFrameId = 0;
+    let innerFrameId = 0;
+
+    outerFrameId = window.requestAnimationFrame(() => {
+      innerFrameId = window.requestAnimationFrame(() => {
+        inputRef.current?.focus({ preventScroll: true });
+      });
     });
 
-    return () => window.cancelAnimationFrame(frameId);
+    return () => {
+      window.cancelAnimationFrame(outerFrameId);
+      window.cancelAnimationFrame(innerFrameId);
+    };
+  }, [open, shouldRender]);
+
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setActiveIndex(0);
+    }
   }, [open]);
 
   useEffect(() => {

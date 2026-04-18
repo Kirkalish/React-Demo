@@ -4,6 +4,9 @@ import { useAlertMode } from "../context/AlertModeContext";
 
 export default function ToastStack({ open, toasts, onDismiss }) {
   const stackRef = useRef(null);
+  const enteredToastIdsRef = useRef(new Set());
+  const exitingToastIdsRef = useRef(new Set());
+  const previousHiddenToastCountRef = useRef(0);
   const visibleToasts = toasts.slice(-3);
   const hiddenToastCount = Math.max(0, toasts.length - visibleToasts.length);
   const [renderedToasts, setRenderedToasts] = useState(() =>
@@ -66,6 +69,13 @@ export default function ToastStack({ open, toasts, onDismiss }) {
       gsap.set(stackRef.current, { clearProps: "transform,opacity,visibility" });
       const children = stackRef.current.querySelectorAll(".toast-stack__overflow, .toast-stack__item");
       gsap.set(children, { clearProps: "transform,opacity,visibility,height,paddingTop,paddingBottom,marginTop,marginBottom" });
+      enteredToastIdsRef.current = new Set(
+        renderedToasts
+          .filter((toast) => toast.phase !== "exiting")
+          .map((toast) => toast.id),
+      );
+      exitingToastIdsRef.current.clear();
+      previousHiddenToastCountRef.current = hiddenToastCount;
       setRenderedToasts((current) => {
         const next = current
           .filter((toast) => toast.phase !== "exiting")
@@ -82,21 +92,24 @@ export default function ToastStack({ open, toasts, onDismiss }) {
       return;
     }
 
-    const cleanup = [];
-
     const enteringToasts = renderedToasts.filter((toast) => toast.phase === "entering");
     const exitingToasts = renderedToasts.filter((toast) => toast.phase === "exiting");
 
     enteringToasts.forEach((toast) => {
+      if (enteredToastIdsRef.current.has(toast.id)) {
+        return;
+      }
+
       const element = stackRef.current?.querySelector(`[data-toast-id="${toast.id}"]`);
 
       if (!element) {
         return;
       }
 
+      enteredToastIdsRef.current.add(toast.id);
       gsap.killTweensOf(element);
       gsap.set(element, { autoAlpha: 0, y: 14, x: 10 });
-      const tween = gsap.to(element, {
+      gsap.to(element, {
         autoAlpha: 1,
         y: 0,
         x: 0,
@@ -111,20 +124,26 @@ export default function ToastStack({ open, toasts, onDismiss }) {
           );
         },
       });
-      cleanup.push(() => tween.kill());
     });
 
     exitingToasts.forEach((toast) => {
+      if (exitingToastIdsRef.current.has(toast.id)) {
+        return;
+      }
+
       const element = stackRef.current?.querySelector(`[data-toast-id="${toast.id}"]`);
+      exitingToastIdsRef.current.add(toast.id);
 
       if (!element) {
+        enteredToastIdsRef.current.delete(toast.id);
+        exitingToastIdsRef.current.delete(toast.id);
         setRenderedToasts((current) => current.filter((item) => item.id !== toast.id));
         return;
       }
 
       gsap.killTweensOf(element);
       gsap.set(element, { height: element.offsetHeight });
-      const tween = gsap.to(element, {
+      gsap.to(element, {
         autoAlpha: 0,
         x: 16,
         y: -6,
@@ -136,14 +155,15 @@ export default function ToastStack({ open, toasts, onDismiss }) {
         duration: 0.2,
         ease: "power2.inOut",
         onComplete: () => {
+          enteredToastIdsRef.current.delete(toast.id);
+          exitingToastIdsRef.current.delete(toast.id);
           setRenderedToasts((current) => current.filter((item) => item.id !== toast.id));
         },
       });
-      cleanup.push(() => tween.kill());
     });
 
     const overflow = stackRef.current.querySelector(".toast-stack__overflow");
-    if (overflow && hiddenToastCount > 0) {
+    if (overflow && hiddenToastCount > 0 && hiddenToastCount !== previousHiddenToastCountRef.current) {
       gsap.killTweensOf(overflow);
       gsap.fromTo(
         overflow,
@@ -158,10 +178,7 @@ export default function ToastStack({ open, toasts, onDismiss }) {
         },
       );
     }
-
-    return () => {
-      cleanup.forEach((fn) => fn());
-    };
+    previousHiddenToastCountRef.current = hiddenToastCount;
   }, [hiddenToastCount, open, reduceMotion, renderedToasts]);
 
   if (!open || (!toasts.length && !renderedToasts.length)) {
