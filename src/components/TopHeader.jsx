@@ -19,7 +19,7 @@ const pageMeta = {
 
 export default function TopHeader() {
   const location = useLocation();
-  const { redAlert, setRedAlert, data } = useAlertMode();
+  const { redAlert, data } = useAlertMode();
   const detailMatch = location.pathname.startsWith("/missions/");
   const crewDetailMatch = location.pathname.startsWith("/crew/");
   const compactHeader = location.pathname !== "/";
@@ -48,15 +48,6 @@ export default function TopHeader() {
       </div>
 
       <div className="top-header__status">
-        <button
-          type="button"
-          className={redAlert ? "alert-toggle alert-toggle--active" : "alert-toggle"}
-          aria-pressed={redAlert}
-          onClick={() => setRedAlert((current) => !current)}
-        >
-          <span className="alert-toggle__dot" />
-          {redAlert ? "Disable red alert" : "Enable red alert"}
-        </button>
         <div
           className={redAlert ? "status-chip status-chip--alert" : "status-chip"}
           role="status"

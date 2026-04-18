@@ -65,11 +65,11 @@ const links = [
   { to: "/crew", label: "Crew", Icon: PersonnelIcon },
 ];
 
-export default function SidebarNav() {
+export default function SidebarNav(props) {
   const { redAlert, data } = useAlertMode();
 
   return (
-    <aside className="sidebar" aria-label="Sidebar">
+    <aside {...props} className="sidebar" aria-label="Sidebar">
       <Link className="sidebar__brand" to="/" aria-label="Go to mission control dashboard">
         <div className="sidebar__crest">
           <BrandMark />
