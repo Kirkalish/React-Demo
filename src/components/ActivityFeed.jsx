@@ -24,6 +24,7 @@ export default function ActivityFeed({
 
     return items.filter(selectedFilter.predicate);
   }, [activeFilter, filterOptions, items]);
+  const displayItems = useMemo(() => visibleItems.slice(0, 15), [visibleItems]);
 
   return (
     <section
@@ -90,7 +91,7 @@ export default function ActivityFeed({
       </div>
 
       <ul className="activity-feed__list" aria-label={title}>
-        {visibleItems.map((item) => (
+        {displayItems.map((item) => (
           <li
             key={item.id}
             className={item.missionId ? "activity-feed__item activity-feed__item--interactive" : "activity-feed__item"}

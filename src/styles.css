@@ -50,10 +50,43 @@
   --alert-accent: #ff9ab1;
   --alert-accent-rgb: 255 113 145;
   --alert-warm-rgb: 255 167 93;
+  --scrollbar-track: rgb(var(--surface-float-rgb) / 0.54);
+  --scrollbar-thumb: rgb(var(--cyan-rgb) / 0.46);
+  --scrollbar-thumb-hover: rgb(var(--cyan-rgb) / 0.7);
+  --scrollbar-corner: rgb(var(--surface-shell-rgb) / 0.76);
+  --scrollbar-inset: rgb(255 255 255 / 0.08);
 }
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px var(--scrollbar-inset);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--scrollbar-corner);
 }
 
 html {
@@ -176,12 +209,21 @@ select {
 .app-shell--alert {
   --line: rgb(var(--alert-accent-rgb) / 0.22);
   --line-strong: rgb(var(--alert-accent-rgb) / 0.38);
+  --scrollbar-track: rgb(var(--surface-float-rgb) / 0.48);
+  --scrollbar-thumb: rgb(var(--alert-accent-rgb) / 0.46);
+  --scrollbar-thumb-hover: rgb(var(--alert-accent-rgb) / 0.7);
+  --scrollbar-corner: rgb(var(--surface-shell-rgb) / 0.82);
+  --scrollbar-inset: rgb(255 255 255 / 0.06);
 }
 
 .app-shell--contrast {
   --line: rgba(214, 226, 255, 0.3);
   --line-strong: rgba(238, 243, 255, 0.54);
   --text-soft: rgba(232, 239, 255, 0.86);
+  --scrollbar-track: rgb(var(--surface-float-rgb) / 0.68);
+  --scrollbar-thumb: rgba(238, 243, 255, 0.54);
+  --scrollbar-thumb-hover: rgba(238, 243, 255, 0.76);
+  --scrollbar-inset: rgb(255 255 255 / 0.12);
 }
 
 .app-shell__glow {
@@ -2007,6 +2049,11 @@ select {
   margin: 0;
   padding: 0;
   list-style: none;
+  max-height: min(58rem, calc(100vh - 18rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 6px;
 }
 
 .activity-feed--alert {
