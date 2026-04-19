@@ -1753,7 +1753,7 @@ select {
 
 .hero-grid__stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(168px, 1.2fr);
   gap: 14px;
   width: min(100%, 820px);
   margin: auto;
