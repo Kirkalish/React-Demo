@@ -2,6 +2,25 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useAlertMode } from "../context/AlertModeContext";
 
+function areRenderedToastsEqual(left, right) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((toast, index) => {
+    const other = right[index];
+
+    return (
+      toast.id === other.id &&
+      toast.title === other.title &&
+      toast.description === other.description &&
+      toast.timestamp === other.timestamp &&
+      toast.tone === other.tone &&
+      toast.phase === other.phase
+    );
+  });
+}
+
 export default function ToastStack({ open, toasts, onDismiss }) {
   const stackRef = useRef(null);
   const enteredToastIdsRef = useRef(new Set());
@@ -56,7 +75,9 @@ export default function ToastStack({ open, toasts, onDismiss }) {
         };
       });
 
-      return [...nextVisible, ...exiting];
+      const nextRenderedToasts = [...nextVisible, ...exiting];
+
+      return areRenderedToastsEqual(current, nextRenderedToasts) ? current : nextRenderedToasts;
     });
   }, [visibleToasts]);
 

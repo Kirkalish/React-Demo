@@ -614,12 +614,11 @@ function ShellLayout() {
       <div className="app-shell__glow app-shell__glow--left" />
       <div className="app-shell__glow app-shell__glow--right" />
 
-      <SidebarNav aria-hidden={backgroundUiHidden} inert={backgroundUiHidden ? true : undefined} />
+      <SidebarNav inert={backgroundUiHidden ? "" : undefined} />
 
       <div
         className="app-shell__content"
-        aria-hidden={backgroundUiHidden}
-        inert={backgroundUiHidden ? true : undefined}
+        inert={backgroundUiHidden ? "" : undefined}
       >
         <TopHeader />
         <main id="main-content" className="app-main" tabIndex={-1}>
@@ -636,7 +635,6 @@ function ShellLayout() {
         aria-modal={!isRevealed}
         aria-labelledby="launch-overlay-title"
         aria-describedby="launch-overlay-description"
-        aria-hidden={isRevealed}
       >
         <div className="launch-overlay__panel">
           <MissionControlMark />
@@ -662,8 +660,7 @@ function ShellLayout() {
         <div
           className="control-dock"
           aria-label="Mission control quick actions"
-          aria-hidden={searchOpen || settingsOpen}
-          inert={searchOpen || settingsOpen ? true : undefined}
+          inert={searchOpen || settingsOpen ? "" : undefined}
         >
           <div ref={menuRef} id="control-dock-panel" className="control-dock__panel">
             <div className="control-dock__viewport">
